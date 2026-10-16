@@ -38,7 +38,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message = 'Recurso não encontrado.';
       }
     } else {
-      this.logger.error(`Falha HTTP ${statusCode}`);
+      this.logger.error(
+        `Falha HTTP ${statusCode}`,
+        exception instanceof Error ? exception.stack : exception,
+      );
     }
 
     const pendingItems =

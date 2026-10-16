@@ -46,6 +46,16 @@ describe.runIf(isEmulatorRunning)('Integração Real com Firebase Emulator Suite
         await assessDoc.delete();
         const adaptDoc = reference.collection('adaptations').doc('initial');
         await adaptDoc.delete();
+        for (const sub of [
+          'customFoods',
+          'diary_meals',
+          'diary_water',
+          'diary_activities',
+          'diary_weights',
+        ]) {
+          const docs = await reference.collection(sub).get();
+          for (const d of docs.docs) await d.ref.delete();
+        }
         await reference.delete();
         await firebase.getAuth().deleteUser(uid);
         expect((await reference.get()).exists).toBe(false);
@@ -550,5 +560,150 @@ describe.runIf(isEmulatorRunning)('Integração Real com Firebase Emulator Suite
       .get('/api/v1/adaptation/me')
       .set('Authorization', `Bearer ${otherToken}`)
       .expect(404);
+  }, 30000);
+
+  it('gerencia catálogo alimentar oficial, alimentos próprios e diário completo com persistência no Firestore Emulator', async () => {
+    const server = app.getHttpServer();
+    const person = await createIdentity();
+    const token = await confirmAndRefresh(person);
+
+    // 1. Consulta catálogo oficial (busca por "arroz" em português)
+    const searchRes = await request(server)
+      .get('/api/v1/foods?query=arroz')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(searchRes.body.items.length).toBeGreaterThan(0);
+    const cookedRice = searchRes.body.items.find((i: { id: string }) => i.id === 'taco_1');
+    expect(cookedRice).toBeDefined();
+    expect(cookedRice.preparation).toBe('cozido');
+
+    // 2. Cria alimento personalizado no Firestore Emulator
+    const customFoodRes = await request(server)
+      .post('/api/v1/foods/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'Whey Protein Isolado',
+        preparation: 'em pó',
+        category: 'Suplementos',
+        nutrientsPer100g: {
+          energyKcal: 370,
+          proteinG: 80,
+          carbohydrateG: 4,
+          fatG: 2,
+          fiberG: 0,
+        },
+        householdMeasures: [{ id: 'scoop', label: '1 scoop', grams: 30 }],
+      })
+      .expect(201);
+
+    const customFoodId = customFoodRes.body.id;
+    expect(customFoodId).toMatch(/^custom_/);
+
+    // 3. Registra refeição mista (arroz TACO com medida caseira + whey personalizado)
+    const mealRes = await request(server)
+      .post('/api/v1/diary/me/meals')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        date: '2026-10-16',
+        mealType: 'lunch',
+        title: 'Almoço com Proteína',
+        items: [
+          {
+            foodId: 'taco_1',
+            amount: 2,
+            unit: 'household',
+            householdMeasureId: 'colher_sopa', // 2 * 25g = 50g
+          },
+          {
+            foodId: customFoodId,
+            amount: 1,
+            unit: 'household',
+            householdMeasureId: 'scoop', // 1 * 30g = 30g
+          },
+        ],
+        clientRequestId: 'meal-lunch-integration',
+      })
+      .expect(201);
+
+    expect(mealRes.body.items).toHaveLength(2);
+    expect(mealRes.body.items[0].weightG).toBe(50);
+    expect(mealRes.body.items[1].weightG).toBe(30);
+    // (2.59 * 0.5 = 1.30) + (80 * 0.3 = 24.0) = 25.30
+    expect(mealRes.body.totals.proteinG.value).toBe(25.3);
+
+    // 4. Registra água
+    await request(server)
+      .post('/api/v1/diary/me/water')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ date: '2026-10-16', amountMl: 600 })
+      .expect(201);
+
+    // 5. Registra atividade física (verificando que NÃO fabrica calorias)
+    const actRes = await request(server)
+      .post('/api/v1/diary/me/activities')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        date: '2026-10-16',
+        type: 'cardio',
+        description: 'Bicicleta ergométrica',
+        durationMinutes: 30,
+        intensity: 'moderate',
+      })
+      .expect(201);
+
+    expect(actRes.body.durationMinutes).toBe(30);
+    expect(actRes.body.caloriesBurned).toBeUndefined();
+
+    // 6. Registra pesagem semanal
+    await request(server)
+      .put('/api/v1/diary/me/weight')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ date: '2026-10-16', weightKg: 81.4 })
+      .expect(200);
+
+    // 7. Consulta visão do dia (/api/v1/diary/me?date=2026-10-16)
+    const dayRes = await request(server)
+      .get('/api/v1/diary/me?date=2026-10-16')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(dayRes.body.hasAnyEntries).toBe(true);
+    expect(dayRes.body.nutritionTotals.hasEntries).toBe(true);
+    expect(dayRes.body.meals).toHaveLength(1);
+    expect(dayRes.body.water.totalMl).toBe(600);
+    expect(dayRes.body.activities).toHaveLength(1);
+    expect(dayRes.body.weight?.weightKg).toBe(81.4);
+
+    // 8. Consulta resumo para o calendário (/api/v1/diary/me/summary)
+    const summaryRes = await request(server)
+      .get('/api/v1/diary/me/summary?from=2026-10-16&to=2026-10-18')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(summaryRes.body.items).toHaveLength(3);
+    const day16 = summaryRes.body.items[0];
+    expect(day16.hasMealEntries).toBe(true);
+    expect(day16.hasWaterEntries).toBe(true);
+    expect(day16.hasActivities).toBe(true);
+    expect(day16.hasWeightEntry).toBe(true);
+
+    // 9. Isolamento: outro usuário não acessa diário ou alimento personalizado do primeiro
+    const otherPerson = await createIdentity();
+    const otherToken = await confirmAndRefresh(otherPerson);
+
+    await request(server)
+      .get(`/api/v1/foods/${customFoodId}`)
+      .set('Authorization', `Bearer ${otherToken}`)
+      .expect(404);
+
+    const otherDayRes = await request(server)
+      .get('/api/v1/diary/me?date=2026-10-16')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .expect(200);
+
+    expect(otherDayRes.body.hasAnyEntries).toBe(false);
+    expect(otherDayRes.body.nutritionTotals.hasEntries).toBe(false);
+    expect(otherDayRes.body.meals).toHaveLength(0);
   }, 30000);
 });
