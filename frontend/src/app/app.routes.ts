@@ -69,6 +69,12 @@ export const routes: Routes = [
       import('./features/dashboard/adaptation/adaptation').then((m) => m.Adaptation),
   },
   {
+    path: 'diario',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/diary/diary').then((m) => m.Diary),
+  },
+  {
     path: 'verificacao-ambiente',
     loadComponent: () => import('./features/foundation/foundation').then((m) => m.Foundation),
   },

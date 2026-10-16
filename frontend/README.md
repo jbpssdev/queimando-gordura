@@ -21,6 +21,7 @@ Aplicação cliente do **Queimando Gordura 1.0**, desenvolvida com **Angular 22 
 | `/avaliacao`            | Questionário guiado de avaliação corporal/hábitos | `authGuard`                             |
 | `/avaliacao/resultados` | Diagnóstico metabólico e resultados calculados    | `authGuard`                             |
 | `/adaptacao`            | Área do Programa Adaptação (30 dias)              | `authGuard`                             |
+| `/diario`               | Diário de alimentação, água, exercícios e peso    | `authGuard`                             |
 | `/verificacao-ambiente` | Verificação técnica de saúde da API               | Livre                                   |
 
 ---
@@ -44,6 +45,11 @@ frontend/src/app/
 │   │   ├── adaptation-api.service.ts # Integração com /api/v1/adaptation/me
 │   │   ├── adaptation-state.service.ts # Estado reativo da jornada e modalidades (Signals)
 │   │   └── adaptation-helpers.ts   # Detecção IANA, formatação pt-BR e geração da timeline
+│   ├── diary/                      # Módulo do Diário da Adaptação
+│   │   ├── diary.model.ts          # Tipos de alimentos, refeições, água, atividades e resumos
+│   │   ├── diary-api.service.ts    # Integração com /api/v1/foods e /api/v1/diary/me
+│   │   ├── diary-state.service.ts  # Estado reativo por data selecionada (Signals)
+│   │   └── diary-helpers.ts        # Cálculo proporcional, totais e formatadores pt-BR
 │   └── auth/
 │       ├── auth-error.util.ts      # Mapeamento amigável de erros do Firebase e da API
 │       ├── auth-session.service.ts # Gerenciador de sessão reativo (Signals do Angular)
@@ -76,11 +82,20 @@ frontend/src/app/
 │   │   │       ├── step-health.ts
 │   │   │       ├── step-routine.ts
 │   │   │       └── step-nutrition.ts
-│   │   └── adaptation/             # Área do Programa Adaptação (/adaptacao)
-│   │       ├── adaptation.ts       # Container dinâmico (carregamento/erro/prévia/jornada)
+│   │   ├── adaptation/             # Área do Programa Adaptação (/adaptacao)
+│   │   │   ├── adaptation.ts       # Container dinâmico (carregamento/erro/prévia/jornada)
+│   │   │   └── components/
+│   │   │       ├── adaptation-preview.ts # Seleção de modalidade e confirmação de início
+│   │   │       └── adaptation-journey.ts # Painel de progresso dos 30 dias e calendário temporal
+│   │   └── diary/                  # Área do Diário (/diario)
+│   │       ├── diary.ts            # Container principal com navegador de data e abas
 │   │       └── components/
-│   │           ├── adaptation-preview.ts # Seleção de modalidade e confirmação de início
-│   │           └── adaptation-journey.ts # Painel de progresso dos 30 dias e calendário temporal
+│   │           ├── diary-meals.ts        # Refeições agrupadas por momento do dia
+│   │           ├── meal-editor-dialog.ts # Montagem de refeições com catálogo e live preview
+│   │           ├── custom-food-dialog.ts # Cadastro de alimentos personalizados privados
+│   │           ├── diary-water.ts        # Ingestão de água com atalhos de recipiente
+│   │           ├── diary-activities.ts   # Registro de exercícios e percepção de esforço
+│   │           └── diary-weight.ts       # Pesagens conscientes em frequência semanal
 │   ├── account/                    # Visualização de perfil real (/minha-conta)
 │   │   ├── my-account.ts
 │   │   └── my-account.spec.ts
@@ -328,9 +343,60 @@ O frontend se integra com o backend através do prefixo `/api/v1`:
 
 `/adaptacao` consulta os três endpoints canônicos (`GET /api/v1/adaptation/me/preview`, `GET /api/v1/adaptation/me`, `POST /api/v1/adaptation/me/start`). O adaptador traduz o JSON do backend para modelos de apresentação: `calendar/localDate/temporalState` em calendário visual, `active` em `in_progress` e avisos/motivos em mensagens. A elegibilidade, datas, progresso e ausência de meta calórica são autoritativos no backend.
 
-Início manual e confirmado, plano único com repetição idempotente200, criação201, erro409 para revisão alterada ou parâmetros incompatíveis e422 para modalidade bloqueada/avaliação incompleta. Exibe os 30 dias, marcos7/14/21/30, dia atual, datas e progresso sem marcar atividades concluídas. Intensificada indisponível. Meta calórica null. IMC >=40 isolado pode acessar Padrão organizacional com orientação profissional; não é liberação médica.
+Início manual e confirmado, plano único com repetição idempotente 200, criação 201, erro 409 para revisão alterada ou parâmetros incompatíveis e 422 para modalidade bloqueada/avaliação incompleta. Exibe os 30 dias, marcos 7/14/21/30, dia atual, datas e progresso integrado aos resumos do Diário.
 
-Veja [contrato completo, segurança e execução](../docs/adaptation.md). Próximos registros diários e pesagens pertencem ao Checkpoint7, não implementado.
+---
+
+## 7. Módulo do Diário da Adaptação — Checkpoint 7A
+
+A rota `/diario` está disponível para todo usuário autenticado com e-mail confirmado e idade elegível, mesmo quando não possuir adaptação ativa ou condições para plano de emagrecimento.
+
+### 7.1. Funcionalidades e Pilares Éticos
+
+1. **Refeições por Momentos do Dia:**
+   - Agrupamento por momentos: Café da manhã, Almoço, Jantar, Lanches, Ceia e Outros.
+   - Busca no catálogo oficial (`GET /api/v1/foods`) com debounce de 300 ms.
+   - Suporte a porções em **gramas** (`g`) e **medidas caseiras** equivalentes cadastradas no catálogo.
+   - Cálculo proporcional de prévia visual na interface; a consolidação oficial ocorre na resposta do backend (`POST /api/v1/diary/me/meals` e `PATCH /api/v1/diary/me/meals/:id`).
+   - Dados nutricionais incompletos na fonte permanecem `null` e são exibidos como "Não informado" ou "Total parcial", nunca substituídos por zero.
+2. **Alimentos Personalizados:**
+   - Cadastro de alimentos privados (`POST /api/v1/foods/me`), identificados com selo "Personalizado".
+   - Alerta explícito de que a precisão nutricional depende dos dados fornecidos pelo próprio usuário.
+3. **Hidratação / Água:**
+   - Registro de água em ml (`POST /api/v1/diary/me/water`).
+   - Atalhos de volume prático (150, 250, 500 ml) que representam recipientes cotidianos, e não metas automáticas de consumo.
+   - Exclusão e correção de lançamentos (`DELETE /api/v1/diary/me/water/:id`).
+4. **Atividades Físicas:**
+   - Registro de exercícios reais (`POST /api/v1/diary/me/activities`): tipo (cardio, força, outra), descrição, duração em minutos e percepção de esforço.
+   - Não estima queima calórica sem modelo validado e não subtrai exercícios do consumo diário de calorias.
+5. **Pesagem Semanal Consciente:**
+   - Registro de peso corporal em kg (`PUT /api/v1/diary/me/weight` com semântica idempotente).
+   - Incentivo à pesagem em intervalos semanais (e não diários), explicando clinicamente as flutuações diárias naturais de retenção hídrica.
+   - Ausência de pesagem não gera qualquer penalidade no aplicativo.
+6. **Integração com o Calendário dos 30 Dias:**
+   - A página `/adaptacao` consulta o resumo (`GET /api/v1/diary/me/summary?from=...&to=...`) e exibe indicadores discretos nos dias com hábitos registrados: 🍽️ Alimentação, 💧 Água, 🏃 Atividades, ⚖️ Peso.
+   - Dias sem registros permanecem estritamente identificados como "Sem registros", sem julgamentos de sucesso ou fracasso.
+   - Os marcos semanais (Dias 7, 14, 21 e 30) exibem lembretes de momento ideal para registro de peso.
+
+### 7.2. Contratos HTTP do Diário e Catálogo
+
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/foods?query=...&limit=...` | Busca de alimentos oficiais e personalizados. |
+| `GET` | `/api/v1/foods/:id` | Detalhes de alimento e medidas caseiras equivalentes. |
+| `POST` | `/api/v1/foods/me` | Cadastro de alimento personalizado privado. |
+| `GET` | `/api/v1/diary/me?date=YYYY-MM-DD` | Consulta dados completos de um dia. |
+| `GET` | `/api/v1/diary/me/summary?from=...&to=...` | Consulta resumos de hábitos para intervalos de datas. |
+| `POST` | `/api/v1/diary/me/meals` | Registro de refeição combinando múltiplos alimentos. |
+| `PATCH` | `/api/v1/diary/me/meals/:id` | Edição de refeição com controle de versão. |
+| `DELETE` | `/api/v1/diary/me/meals/:id` | Exclusão de refeição com confirmação. |
+| `POST` | `/api/v1/diary/me/water` | Registro de consumo de água em ml. |
+| `DELETE` | `/api/v1/diary/me/water/:id` | Exclusão de lançamento de água. |
+| `POST` | `/api/v1/diary/me/activities` | Registro de atividade física realizada. |
+| `PATCH` | `/api/v1/diary/me/activities/:id` | Atualização de atividade física. |
+| `DELETE` | `/api/v1/diary/me/activities/:id` | Exclusão de atividade física. |
+| `PUT` | `/api/v1/diary/me/weight` | Registro ou atualização idempotente de peso da data. |
+| `DELETE` | `/api/v1/diary/me/weight?date=YYYY-MM-DD` | Remoção de pesagem da data. |
 
 ## 8. Como Executar e Validar
 

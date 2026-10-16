@@ -12,6 +12,7 @@ import {
 } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AdaptationApiService } from './adaptation-api.service';
+import { DiaryApiService } from '../diary/diary-api.service';
 import { AuthSessionService } from '../auth/auth-session.service';
 import { detectBrowserTimeZone } from './adaptation-helpers';
 import type {
@@ -21,12 +22,14 @@ import type {
   AdaptationPreviewResponse,
   StartAdaptationDto,
 } from './adaptation.model';
+import type { DiaryDaySummaryItem } from '../diary/diary.model';
 
 export type AdaptationLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 @Injectable({ providedIn: 'root' })
 export class AdaptationStateService {
   private readonly api = inject(AdaptationApiService);
+  private readonly diaryApi = inject(DiaryApiService);
 
   private readonly session = inject(AuthSessionService);
   private readonly identityChanged = new Subject<void>();
@@ -39,6 +42,7 @@ export class AdaptationStateService {
         this.identityChanged.next();
         this.plan.set(null);
         this.preview.set(null);
+        this.diarySummaries.set({});
         this.loadStatus.set('idle');
         this.loadError.set(null);
         this.startError.set(null);
@@ -49,6 +53,9 @@ export class AdaptationStateService {
   }
   // Plano ativo ou concluído
   public readonly plan = signal<AdaptationPlanResponse | null>(null);
+
+  // Resumos diários do diário de hábitos para os 30 dias da adaptação
+  public readonly diarySummaries = signal<Record<string, DiaryDaySummaryItem>>({});
 
   // Prévia de elegibilidade para planos ainda não iniciados
   public readonly preview = signal<AdaptationPreviewResponse | null>(null);
@@ -113,6 +120,9 @@ export class AdaptationStateService {
       tap((plan) => {
         this.plan.set(plan);
         this.loadStatus.set('ready');
+        if (plan?.startDate && plan?.endDate) {
+          this.loadDiarySummaries(plan.startDate, plan.endDate);
+        }
       }),
       catchError((err: unknown) => {
         if (err instanceof HttpErrorResponse && err.status === 404) {
@@ -241,6 +251,9 @@ export class AdaptationStateService {
       tap((newPlan) => {
         this.plan.set(newPlan);
         this.isStarting.set(false);
+        if (newPlan?.startDate && newPlan?.endDate) {
+          this.loadDiarySummaries(newPlan.startDate, newPlan.endDate);
+        }
       }),
       catchError((err: unknown) => {
         this.isStarting.set(false);
@@ -264,5 +277,25 @@ export class AdaptationStateService {
         return throwError(() => err);
       }),
     );
+  }
+
+  /**
+   * Consulta os resumos diários de hábitos (alimentação, água, atividade, peso)
+   * para o intervalo dos 30 dias de adaptação.
+   */
+  public loadDiarySummaries(from: string, to: string): void {
+    this.diaryApi
+      .getSummary(from, to)
+      .pipe(
+        takeUntil(this.identityChanged),
+        catchError(() => of({ summaries: [] })),
+      )
+      .subscribe((res) => {
+        const dict: Record<string, DiaryDaySummaryItem> = {};
+        for (const item of res.summaries || []) {
+          dict[item.date] = item;
+        }
+        this.diarySummaries.set(dict);
+      });
   }
 }

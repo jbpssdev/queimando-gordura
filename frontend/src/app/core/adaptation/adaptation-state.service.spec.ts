@@ -7,6 +7,7 @@ import { of, Subject, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AdaptationStateService } from './adaptation-state.service';
 import { AdaptationApiService } from './adaptation-api.service';
+import { DiaryApiService } from '../diary/diary-api.service';
 import type { AdaptationPlanResponse, AdaptationPreviewResponse } from './adaptation.model';
 
 describe('AdaptationStateService', () => {
@@ -29,6 +30,10 @@ describe('AdaptationStateService', () => {
         AdaptationStateService,
         { provide: AuthSessionService, useValue: { currentUser: signal(null) } },
         { provide: AdaptationApiService, useValue: mockApi },
+        {
+          provide: DiaryApiService,
+          useValue: { getSummary: vi.fn().mockReturnValue(of({ summaries: [] })) },
+        },
       ],
     });
 
