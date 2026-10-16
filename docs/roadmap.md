@@ -1,19 +1,20 @@
 # Roadmap
 
-## Checkpoint 0 — fundação técnica
+## Entregue — fundação e integração de identidade/perfil
 
-Monorepo, Angular standalone/Router, Tailwind 4, Spartan Button/Card, página técnica, Nest `/api/v1/health`, validação/CORS/erros, dependências Firebase, emuladores e regras deny-by-default, ambientes, testes, CI e documentação. Sem funcionalidades de emagrecimento ou deploy automático.
+- Fundação 8ae3b26: Angular standalone, Tailwind/Spartan, API Nest, ambientes, testes, CI e documentação.
+- Frontend d315bc7: landing, cadastro, login e-mail/senha/Google, recuperação de senha, confirmação, guards e painel básico.
+- Backend 08956d9: Admin SDK, guards de ID Token/e-mail, GET e PUT /api/v1/users/me, persistência em users/{uid}.
+- Checkpoint 2 integra os históricos e o contrato, adiciona modo local reproduzível, renovação explícita do token, distinção entre perfil ausente e API indisponível e automação entre Angular, Nest e emuladores oficiais. Registros de teste são isolados e removidos individualmente.
 
-## Próximo checkpoint — identidade e autorização (planejado)
+A validação de emuladores não valida Firebase em nuvem. Google OAuth real, entrega de e-mails e IAM dependem de projeto Firebase real de desenvolvimento e configuração externa. CI GitHub continua bloqueada por cobrança; workflow preservado.
 
-Integrar Firebase Auth e-mail/senha e Google; configuração pública por ambiente; sessão/renovação; validação de ID token pelo Admin; autorização e isolamento por usuário; testes positivos/negativos entre usuários. Inicializar SDKs somente com configuração solicitada e válida, sem segunda autenticação própria.
+## Próximo checkpoint — desenvolvimento em paralelo com contrato acordado
 
-## Etapas posteriores (planejadas)
+Preparar e validar o projeto Firebase real de desenvolvimento, domínios/provedores e credenciais externas, sem confundir com produção. Definir o contrato e os requisitos de consentimento/minimização para perfis e avaliação inicial antes de implementar novas funcionalidades. Os agentes podem abrir novas branches a partir da main integrada; respeitar propriedade de arquivos e integração única de manifests/lockfile conforme AGENTS.md.
 
-1. Perfis e avaliação corporal/rotina/objetivos, respeitando consentimentos e minimização.
-2. Adaptação de 30 dias e regras de estimativa com referência no backend.
-3. Catálogo alimentar, preparos, registros diários, exercícios, histórico semanal do peso e gráficos.
-4. Ajustes auditáveis, relatórios e PDF final; exportação/exclusão e integridade do histórico.
-5. Foco Total; controle glicêmico, exames e sono, sujeitos a requisitos clínicos e de privacidade próprios.
+## Posterior — ainda não implementado
 
-Escopo, critérios e validações devem ser aprovados em cada tarefa. A existência deste roadmap não autoriza implementar módulos adicionais.
+Avaliação corporal/rotina/objetivos; IMC e fórmulas estimativas com referência no backend; Adaptação de 30 dias; catálogo alimentar e preparos; registros diários, exercícios, histórico de peso e gráficos; ajustes auditáveis e relatório PDF. Depois: Foco Total, controle glicêmico, exames e sono.
+
+As rotas Avaliação e Adaptação atuais são apenas avisos, sem questionários ou cálculos. Roadmap não é autorização para implementar módulos adicionais.

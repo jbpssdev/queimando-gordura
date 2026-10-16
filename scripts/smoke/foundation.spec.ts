@@ -5,7 +5,7 @@ for (const width of [375, 1440]) {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.setViewportSize({ width, height: 900 });
-    await page.goto('/');
+    await page.goto('/verificacao-ambiente');
     await expect(page).toHaveTitle('Queimando Gordura 1.0');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Uma base sólida.');
     const button = page.getByRole('button', { name: 'Verificar API' });

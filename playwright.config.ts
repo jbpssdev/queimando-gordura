@@ -1,11 +1,14 @@
 import { defineConfig } from '@playwright/test';
+const port = Number(process.env['QG_FRONTEND_PORT'] ?? 4200);
+if (!Number.isInteger(port) || port < 1024 || port > 65535)
+  throw new Error('Porta de teste inválida.');
 
 export default defineConfig({
   testDir: './scripts/smoke',
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  use: { baseURL: 'http://localhost:4200', browserName: 'chromium', trace: 'retain-on-failure' },
+  use: { baseURL: `http://localhost:${port}`, browserName: 'chromium', trace: 'retain-on-failure' },
   webServer: [
     {
       command: 'npm run start:prod --workspace backend',
@@ -15,13 +18,13 @@ export default defineConfig({
       env: {
         NODE_ENV: 'test',
         PORT: '3100',
-        CORS_ORIGINS: 'http://localhost:4200',
+        CORS_ORIGINS: `http://localhost:${port}`,
         FIREBASE_MODE: 'disabled',
       },
     },
     {
-      command: 'npm run dev:frontend',
-      url: 'http://localhost:4200',
+      command: `npm run start --workspace frontend -- --port ${port}`,
+      url: `http://localhost:${port}`,
       reuseExistingServer: false,
       timeout: 120000,
     },

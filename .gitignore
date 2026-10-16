@@ -23,6 +23,7 @@ Thumbs.db
 .idea/
 .vscode/
 .tools/
+.worktrees/
 test-results/
 playwright-report/
 .emulator-data/

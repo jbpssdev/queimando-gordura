@@ -23,15 +23,17 @@ if (java.error || java.status !== 0) {
   process.exit(1);
 }
 const testing = process.argv.includes('--test');
+const integrating = process.argv.includes('--integration');
 const args = [
   join(root, 'node_modules/firebase-tools/lib/bin/firebase.js'),
-  testing ? 'emulators:exec' : 'emulators:start',
+  testing || integrating ? 'emulators:exec' : 'emulators:start',
   '--project',
   'demo-queimando-gordura',
   '--only',
   'auth,firestore',
 ];
 if (testing) args.push(`"${process.execPath}" --test firebase/firestore.rules.test.mjs`);
+if (integrating) args.push(`"${process.execPath}" scripts/run-integration.mjs`);
 const result = spawnSync(process.execPath, args, { cwd: root, env, stdio: 'inherit' });
 if (result.error) console.error(result.error.message);
 process.exit(result.status ?? 1);

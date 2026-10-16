@@ -2,9 +2,9 @@
 
 ## Decisão principal
 
-Aplicação Angular standalone, mobile-first, com Router, lazy loading e Signals para estado local. API REST NestJS por módulos de domínio. npm workspaces, sem Nx/Turborepo, banco relacional ou ferramentas de orquestração. Apenas página de verificação e `GET /api/v1/health` implementados.
+Aplicação Angular standalone, mobile-first, com Router, lazy loading e Signals para estado local. API REST NestJS por módulos de domínio. npm workspaces, sem Nx/Turborepo, banco relacional ou ferramentas de orquestração. Autenticação Firebase, perfis individuais, landing e painel básico integrados no checkpoint 2. Avaliação e Adaptação seguem como avisos, sem regras de produto.
 
-## Autenticação e acesso a dados futuros
+## Autenticação e acesso a dados
 
 1. Usuário acessa Angular.
 2. Firebase Authentication autentica a identidade e renova a sessão no navegador.
@@ -16,13 +16,13 @@ Aplicação Angular standalone, mobile-first, com Router, lazy loading e Signals
 
 Dados pessoais, avaliações, refeições e progresso serão acessados exclusivamente pela API. O navegador poderá usar diretamente Firebase Authentication; não acessará essas coleções com o SDK Firestore. Não haverá autenticação paralela nem duas fontes de verdade para os registros.
 
-Nunca usar `userId` recebido do cliente para autorizar registros. Guards futuros devem extrair a identidade do token validado; consultas, gravações e operações em lote precisam verificar propriedade e escopo no backend. Sugestão futura de organização: subcoleções sob `users/{uid}`, a definir quando os modelos forem implementados. Nenhuma coleção é criada agora.
+Nunca usar `userId` recebido do cliente para autorizar registros. Os guards extraem a identidade do token validado; consultas, gravações e operações em lote precisam verificar propriedade e escopo no backend. Sugestão futura de organização: subcoleções sob `users/{uid}`, a definir quando os modelos forem implementados. A coleção users/{uid} armazena o perfil básico; demais coleções permanecem futuras.
 
 O Admin SDK ignora regras Firestore; autorização própria da API é obrigatória, inclusive para acesso por ID direto. As regras atuais negam toda leitura/escrita por clientes, autenticados ou não. Firebase Admin e credenciais administrativas jamais entram no bundle Angular.
 
 ## Responsabilidades
 
-- `frontend/core`: HTTP, configuração e autenticação futura; `shared`: recursos reutilizáveis; `features`: domínios; `layouts`: estruturas públicas/autenticadas quando necessárias.
+- `frontend/core`: HTTP, configuração e autenticação; `shared`: recursos reutilizáveis; `features`: domínios; `layouts`: estruturas públicas/autenticadas quando necessárias.
 - `backend/common`: filtros, guards/interceptors efetivamente necessários; `config`: ambiente validado; `modules`: domínios sem acoplamento indevido.
 - Controllers cuidam de HTTP; services futuros de regras; DTOs validam entrada; providers encapsulam infraestrutura quando necessária. Sem services artificiais para o health estático.
 - Cálculos metabólicos e recomendações terão implementação de referência no backend. Prévias do frontend não autorizam nem determinam cálculos persistidos.
@@ -53,3 +53,13 @@ TypeScript Angular e Nest têm configurações independentes. Angular conserva b
 - [Tailwind com Angular](https://tailwindcss.com/docs/installation/framework-guides/angular)
 - [Configuração NestJS](https://docs.nestjs.com/techniques/configuration)
 - [Firebase Emulator Suite](https://firebase.google.com/docs/emulator-suite/install_and_configure)
+
+## Integração — checkpoint 2
+
+PUT /api/v1/users/me usa somente FirebaseAuthGuard e permite salvar o próprio perfil antes da confirmação. GET exige também VerifiedEmailGuard: 403 para e-mail não confirmado e 404 quando o perfil não existe. Campos aceitos: firstName, lastName, age18Confirmed=true. Identidade vem exclusivamente do token. Persistência transacional preserva createdAt, atualiza updatedAt em ISO UTC e não armazena senha/token.
+
+Angular usa o interceptor somente para chamadas relativas /api, renova o token depois de recarregar a identidade e distingue 404 de erros de autenticação/indisponibilidade. Cadastro parcial preserva identidade e dados sem repetir signUp. Falhas de consulta mostram recuperação, sem considerar automaticamente o perfil inexistente.
+
+Modo emulator do Angular tem substituição de arquivo explícita e somente projeto demo/hosts loopback; padrão e produção permanecem desativados sem configuração. Admin é inicializado no backend somente quando habilitado e a configuração é validada; ausência de Firebase retorna 503 nos endpoints protegidos. SDKs não afirmam conectividade só porque foram inicializados.
+
+Testes reais usam emuladores oficiais, tokens emitidos por Auth, persistência Firestore e limpeza individual em hooks. O navegador confirma o e-mail com o código emitido pelo emulador e usa a API pelo proxy. Esses testes não validam IAM, entrega de e-mail ou OAuth reais. [Diferenças oficiais do emulador](https://firebase.google.com/docs/emulator-suite/connect_auth).

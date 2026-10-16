@@ -14,18 +14,28 @@ export class HttpExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const body = exception instanceof HttpException ? exception.getResponse() : undefined;
     let message: string | string[] = 'Erro interno do servidor.';
-    if (statusCode === 404) {
-      message = 'Recurso não encontrado.';
-    } else if (statusCode < 500) {
-      if (typeof body === 'string') message = body;
-      else if (
+    if (statusCode !== 500) {
+      if (typeof body === 'string') {
+        message = body;
+      } else if (
         body &&
         typeof body === 'object' &&
         'message' in body &&
         (typeof body.message === 'string' ||
           (Array.isArray(body.message) && body.message.every((item) => typeof item === 'string')))
       ) {
-        message = body.message as string | string[];
+        const bodyMessage = body.message as string | string[];
+        if (
+          statusCode === 404 &&
+          typeof bodyMessage === 'string' &&
+          bodyMessage.startsWith('Cannot ')
+        ) {
+          message = 'Recurso não encontrado.';
+        } else {
+          message = bodyMessage;
+        }
+      } else if (statusCode === 404) {
+        message = 'Recurso não encontrado.';
       }
     } else {
       this.logger.error(`Falha HTTP ${statusCode}`);

@@ -1,10 +1,10 @@
 # Produto — Queimando Gordura 1.0
 
-Todas as funcionalidades abaixo são **planejadas, não implementadas** no checkpoint 0.
+Autenticação e perfil básico estão implementados no checkpoint 2. Avaliação corporal, acompanhamento e módulos de emagrecimento abaixo permanecem **planejados, não implementados**.
 
 Público inicial: adultos de 18 anos ou mais que desejam emagrecer. Identidade clara, moderna, limpa, quase minimalista, com cores alegres equilibradas e foco em dados/resultados; sem aparência de academia, excesso de sombras, gradientes ou cartões decorativos.
 
-Autenticação futura: e-mail/senha e Google via Firebase Authentication. Cadastro com nome, sobrenome, e-mail e credenciais de autenticação geridas pelo Firebase; sem telefone obrigatório e sem armazenar senhas no Firestore.
+Autenticação implementada: e-mail/senha e Google via Firebase Authentication; validação em nuvem permanece pendente. Cadastro com nome, sobrenome, e-mail e credenciais de autenticação geridas pelo Firebase; sem telefone obrigatório e sem armazenar senhas no Firestore.
 
 Avaliação inicial futura: informações corporais, rotina, atividade cotidiana, exercícios, objetivos e dados de saúde relevantes fornecidos voluntariamente. Primeiro módulo: **Adaptação**, com duração de **30 dias**.
 
