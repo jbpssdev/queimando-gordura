@@ -40,9 +40,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
     } else {
       this.logger.error(`Falha HTTP ${statusCode}`);
     }
+
+    const pendingItems =
+      body && typeof body === 'object' && 'pendingItems' in body
+        ? (body as { pendingItems: unknown }).pendingItems
+        : undefined;
+
     response.status(statusCode).json({
       statusCode,
       message,
+      ...(pendingItems !== undefined ? { pendingItems } : {}),
       path: request.originalUrl.split('?')[0] ?? request.path,
       timestamp: new Date().toISOString(),
     });

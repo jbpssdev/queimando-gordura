@@ -8,19 +8,20 @@ Aplicação cliente do **Queimando Gordura 1.0**, desenvolvida com **Angular 22 
 
 ## 1. Rotas Implementadas
 
-| Rota                    | Descrição                                       | Proteção (Guard)                        |
-| :---------------------- | :---------------------------------------------- | :-------------------------------------- |
-| `/`                     | Landing page pública do produto                 | Livre                                   |
-| `/entrar`               | Login com e-mail/senha ou Google                | `guestGuard` (redireciona autenticados) |
-| `/cadastrar`            | Criação de conta com declaração 18+             | `guestGuard`                            |
-| `/recuperar-senha`      | Redefinição de senha segura                     | `guestGuard`                            |
-| `/verificar-email`      | Confirmação de e-mail obrigatória               | `verifyEmailGuard`                      |
-| `/completar-perfil`     | Preenchimento de perfil pendente (Google/retry) | `completeProfileGuard`                  |
-| `/painel`               | Dashboard principal autenticado                 | `authGuard`                             |
-| `/minha-conta`          | Dados reais da conta (`GET /api/v1/users/me`)   | `authGuard`                             |
-| `/avaliacao`            | Área de avaliação física/corporal               | `authGuard`                             |
-| `/adaptacao`            | Área do Programa Adaptação (30 dias)            | `authGuard`                             |
-| `/verificacao-ambiente` | Verificação técnica de saúde da API             | Livre                                   |
+| Rota                    | Descrição                                         | Proteção (Guard)                        |
+| :---------------------- | :------------------------------------------------ | :-------------------------------------- |
+| `/`                     | Landing page pública do produto                   | Livre                                   |
+| `/entrar`               | Login com e-mail/senha ou Google                  | `guestGuard` (redireciona autenticados) |
+| `/cadastrar`            | Criação de conta com declaração 18+               | `guestGuard`                            |
+| `/recuperar-senha`      | Redefinição de senha segura                       | `guestGuard`                            |
+| `/verificar-email`      | Confirmação de e-mail obrigatória                 | `verifyEmailGuard`                      |
+| `/completar-perfil`     | Preenchimento de perfil pendente (Google/retry)   | `completeProfileGuard`                  |
+| `/painel`               | Dashboard principal autenticado                   | `authGuard`                             |
+| `/minha-conta`          | Dados reais da conta (`GET /api/v1/users/me`)     | `authGuard`                             |
+| `/avaliacao`            | Questionário guiado de avaliação corporal/hábitos | `authGuard`                             |
+| `/avaliacao/resultados` | Diagnóstico metabólico e resultados calculados    | `authGuard`                             |
+| `/adaptacao`            | Área do Programa Adaptação (30 dias)              | `authGuard`                             |
+| `/verificacao-ambiente` | Verificação técnica de saúde da API               | Livre                                   |
 
 ---
 
@@ -33,6 +34,11 @@ frontend/src/app/
 ├── core/
 │   ├── firebase.config.ts          # Configuração pública tipada (disabled / emulator / production)
 │   ├── health.service.ts           # Verificação da API local
+│   ├── assessment/                 # Módulo de Avaliação Inicial
+│   │   ├── assessment.model.ts     # Modelos e DTOs de corpo, saúde, rotina e nutrição
+│   │   ├── assessment-api.service.ts # Consumo de /api/v1/assessments/me
+│   │   ├── assessment-state.service.ts # Gestor reativo de etapas e rascunho (Signals)
+│   │   └── assessment-helpers.ts   # Cálculo de idade, decimais pt-BR e pendências inteligentes
 │   └── auth/
 │       ├── auth-error.util.ts      # Mapeamento amigável de erros do Firebase e da API
 │       ├── auth-session.service.ts # Gerenciador de sessão reativo (Signals do Angular)
@@ -55,7 +61,16 @@ frontend/src/app/
 │   │   └── complete-profile/
 │   ├── dashboard/                  # Telas autenticadas do usuário
 │   │   ├── dashboard/
-│   │   ├── assessment/
+│   │   ├── assessment/             # Avaliação Inicial e Resultados
+│   │   │   ├── assessment.ts       # Container guiado com stepper e autosave
+│   │   │   ├── assessment-results.ts # Página de resultados (/avaliacao/resultados)
+│   │   │   └── components/
+│   │   │       ├── assessment-stepper.ts
+│   │   │       ├── assessment-pending.ts
+│   │   │       ├── step-body.ts
+│   │   │       ├── step-health.ts
+│   │   │       ├── step-routine.ts
+│   │   │       └── step-nutrition.ts
 │   │   └── adaptation/
 │   ├── account/                    # Visualização de perfil real (/minha-conta)
 │   │   ├── my-account.ts
@@ -129,6 +144,53 @@ frontend/src/app/
   - Data de criação da conta (formatada em português).
 - **Privacidade e segurança:** UIDs internos, tokens e identificadores técnicos não são expostos na interface.
 - Acesso à ação de encerramento seguro de sessão (logout) com limpeza de estado e redirecionamento para `/entrar`.
+
+### 3.7. Avaliação Inicial do Usuário (`/avaliacao` e `/avaliacao/resultados`)
+
+Implementação completa do fluxo de avaliação guiado em 5 etapas no Angular 22:
+
+1. **Informações Corporais (`body`):**
+   - Data de nascimento com validação real de idade mínima de 18 anos (`calculateAge()`).
+   - Opção informada ou neutra para sexo biológico, com explicação respeitosa de sua aplicação na fórmula metabólica (Harris-Benedict / Mifflin).
+   - Altura (cm) e peso atual (kg), com suporte a decimais no formato brasileiro (`82,5`).
+   - Tipo de balança: comum ou bioimpedância (com campos condicionais opcionais: % gordura, massa muscular em kg, água % e gordura visceral).
+   - Medidas opcionais complementares e peso desejado informado pelo usuário (sem imposição clínica de peso ideal).
+2. **Condições de Saúde (`health`):**
+   - Declaração de histórico com opções mutuamente exclusivas ("Nenhuma condição conhecida", "Não sei informar", "Condições selecionadas").
+   - Categorias clínicas estruturadas (cardiovascular, glicemia, respiratória, renal, hepática, etc.).
+   - Medicamentos de uso contínuo (opcional).
+   - Sintomas de alerta: detecção imediata de sintomas urgentes (dor no peito, desmaios) com banner recomendando avaliação médica presencial.
+   - Gestação e amamentação.
+3. **Rotina e Atividade Física (`routine`):**
+   - Rotina profissional (sedentária a pesada) e horas sentado por dia.
+   - Nível de movimentação no dia a dia.
+   - Média de passos diários (manual, com recomendação de Google Fit / smartwatch).
+   - Prática de musculação e aeróbicos/cardio com campos condicionais de frequência, duração e intensidade (leve, moderada, intensa).
+   - Opção para iniciantes recentes sem rotina regular.
+4. **Hábitos Alimentares (`nutrition`):**
+   - Quantidade de refeições por dia e regularidade de horários.
+   - Períodos prolongados em jejum e alimentação na madrugada.
+   - Origem do preparo (casa, restaurante, delivery, combinação).
+   - Balança culinária de precisão (esclarecendo que não é obrigatória).
+   - Frequência de bebidas açucaradas e álcool.
+   - Desafios no emagrecimento (ansiedade, falta de tempo, etc.).
+   - Limitação no orçamento para compras de alimentos.
+5. **Revisão e Pendências Inteligentes:**
+   - Resumo das quatro seções anteriores com atalhos para edição rápida.
+   - Painel de pendências categorizadas por prioridade:
+     - **Essenciais:** impedem cálculos matemáticos ou metabólicos.
+     - **Importantes:** contextualizam o perfil do usuário.
+     - **Opcionais:** acompanhamento complementar ("Você poderá adicionar sua circunferência abdominal depois.").
+   - Conclusão permitida mesmo com dados opcionais pendentes.
+6. **Resultados da Avaliação (`/avaliacao/resultados`):**
+   - Consumidos exclusivamente do backend NestJS.
+   - Peso atual, idade calculada, IMC categorizado e contextualizado.
+   - Taxa Metabólica Basal estimada (com aviso explícito de que não é a meta diária calórica).
+   - Gasto Energético Total (GET) estimado em faixa.
+   - Primeira referência de perda ponderal de 5% (sem prazo imposto).
+   - Faixa de referência populacional IMC e peso desejado pelo usuário.
+   - Orientações de segurança médica retornadas pela API.
+   - Apresentação transparente do **Programa Adaptação (30 dias)** nas modalidades Padrão e Intensificada, informando que a criação do plano será liberada no próximo checkpoint.
 
 ---
 
@@ -213,12 +275,52 @@ O frontend se integra com o backend através do prefixo `/api/v1`:
   - `404`: Perfil ainda não cadastrado na base (redireciona para `/completar-perfil`).
   - `503`: Backend ou Firestore temporariamente indisponíveis.
 
+### `GET /api/v1/assessments/me`
+
+- **Cabeçalho:** `Authorization: Bearer <Firebase ID Token>`
+- **Respostas:**
+  - `200`: Objeto `AssessmentDraftResponse` com o rascunho persistido.
+  - `404`: Usuário ainda não iniciou avaliação (frontend inicializa rascunho em branco).
+  - `503`: Backend indisponível (frontend apresenta alerta resiliente sem perder alterações em tela).
+
+### `PATCH /api/v1/assessments/me`
+
+- **Cabeçalho:** `Authorization: Bearer <Firebase ID Token>`
+- **Body:**
+  ```json
+  {
+    "section": "body",
+    "data": {
+      "birthDate": "1992-05-10",
+      "biologicalSex": "female",
+      "heightCm": 168,
+      "currentWeightKg": 68.5,
+      "scaleType": "standard"
+    }
+  }
+  ```
+- **Seções suportadas:** `body`, `health`, `routine`, `nutrition`. Envia exclusivamente campos válidos da seção indicada.
+
+### `POST /api/v1/assessments/me/evaluate`
+
+- **Cabeçalho:** `Authorization: Bearer <Firebase ID Token>`
+- **Respostas:**
+  - `200`: `AssessmentResultsResponse` com os cálculos oficiais validados pelo backend.
+  - `400`: Pendência de dados essenciais para o cálculo.
+
+### `GET /api/v1/assessments/me/results`
+
+- **Cabeçalho:** `Authorization: Bearer <Firebase ID Token>`
+- **Respostas:**
+  - `200`: `AssessmentResultsResponse` com a última avaliação vigente calculada.
+  - `404`: Nenhuma avaliação calculada disponível.
+
 ---
 
-## 6. Limitações Atuais
+## 6. Limitações Atuais e Próximos Passos
 
-- **Cálculos corporais:** Fórmulas de IMC, taxas metabólicas basais e planos calóricos **não** foram introduzidos nesta etapa, mantendo a fidelidade arquitetural (regras de cálculo persistidas pertencem ao backend).
-- **Programa Adaptação:** Exibe estado informativo e cards conceituais; os módulos de registro de refeições e pesagens serão liberados nos checkpoints seguintes.
+- **Cálculos corporais e metabólicos:** Fórmulas de IMC, taxas metabólicas basais (Harris-Benedict/Mifflin) e estimativas de gasto energético diário pertencem exclusivamente ao backend NestJS (`/api/v1/assessments/me/evaluate`). O frontend não realiza cálculos matemáticos paralelos que substituam a API oficial.
+- **Programa Adaptação:** Apresenta estrutura conceitual e modalidades Padrão e Intensificada; a criação de planos personalizados e o contador de 30 dias serão liberados no próximo checkpoint de desenvolvimento.
 
 ---
 

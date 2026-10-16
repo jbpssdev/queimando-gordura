@@ -20,6 +20,21 @@ const emails: string[] = [];
 const password = randomUUID();
 const disabled = process.env['QG_TEST_API_DISABLED'] === '1';
 
+test('falha parcial avaliação: API realmente desativada responde 503 nos quatro contratos', async ({
+  request,
+}) => {
+  test.skip(!disabled);
+  for (const [method, path] of [
+    ['get', ''],
+    ['patch', ''],
+    ['post', '/evaluate'],
+    ['get', '/results'],
+  ] as const) {
+    const response = await request[method]('/api/v1/assessments/me' + path);
+    expect(response.status()).toBe(503);
+  }
+});
+
 function temporaryEmail(): string {
   const email = `qg-browser-${randomUUID()}@example.test`;
   emails.push(email);

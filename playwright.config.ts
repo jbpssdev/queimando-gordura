@@ -1,5 +1,5 @@
 import { defineConfig } from '@playwright/test';
-const port = Number(process.env['QG_FRONTEND_PORT'] ?? 4200);
+const port = Number(process.env['QG_FRONTEND_PORT'] ?? 4203);
 if (!Number.isInteger(port) || port < 1024 || port > 65535)
   throw new Error('Porta de teste inválida.');
 
@@ -12,18 +12,18 @@ export default defineConfig({
   webServer: [
     {
       command: 'npm run start:prod --workspace backend',
-      url: 'http://127.0.0.1:3100/api/v1/health',
+      url: 'http://127.0.0.1:3105/api/v1/health',
       reuseExistingServer: false,
       timeout: 30000,
       env: {
         NODE_ENV: 'test',
-        PORT: '3100',
+        PORT: '3105',
         CORS_ORIGINS: `http://localhost:${port}`,
         FIREBASE_MODE: 'disabled',
       },
     },
     {
-      command: `npm run start --workspace frontend -- --port ${port}`,
+      command: `npm run start --workspace frontend -- --port ${port} --proxy-config proxy.integration.conf.json`,
       url: `http://localhost:${port}`,
       reuseExistingServer: false,
       timeout: 120000,

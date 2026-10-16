@@ -57,6 +57,12 @@ export const routes: Routes = [
       import('./features/dashboard/assessment/assessment').then((m) => m.Assessment),
   },
   {
+    path: 'avaliacao/resultados',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/assessment/assessment-results').then((m) => m.AssessmentResults),
+  },
+  {
     path: 'adaptacao',
     canActivate: [authGuard],
     loadComponent: () =>

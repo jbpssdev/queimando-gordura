@@ -101,10 +101,8 @@ describe.runIf(authorized)('Firebase Cloud DEV: tokens reais, API e isolamento',
     await request(server).get('/api/v1/health').expect(200).expect({ status: 'ok' });
     for (const method of ['get', 'put'] as const) {
       await request(server)[method]('/api/v1/users/me').expect(401);
-      await request(server)
-        [method]('/api/v1/users/me')
-        .set('Authorization', 'Bearer invalid-token')
-        .expect(401);
+      const invalid = request(server)[method]('/api/v1/users/me');
+      await invalid.set('Authorization', 'Bearer invalid-token').expect(401);
     }
     const first = await register();
     const initialToken = await first.getIdToken();

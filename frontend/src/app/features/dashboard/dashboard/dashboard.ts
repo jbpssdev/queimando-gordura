@@ -139,10 +139,10 @@ import { AuthSessionService } from '../../../core/auth/auth-session.service';
               <a
                 routerLink="/avaliacao"
                 hlmBtn
-                variant="outline"
-                class="w-full text-xs font-medium"
+                variant="default"
+                class="w-full text-xs font-semibold"
               >
-                Conhecer a Avaliação
+                Iniciar ou Continuar Avaliação →
               </a>
             </div>
           </div>

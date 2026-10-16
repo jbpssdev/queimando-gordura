@@ -1,22 +1,21 @@
 # Roadmap
 
-## Entregue — identidade, perfis e integração Cloud DEV
+## Entregue
 
-- Fundação `8ae3b26`: Angular standalone, Tailwind/Spartan, Nest, ambientes, testes e CI.
-- Integração `2288209`: frontend `d315bc7` e backend `08956d9`, contrato de autenticação/perfil e automação com emuladores.
-- Checkpoint 4 integra frontend `7b4782a` (Minha Conta, Google popup/redirect e tratamento de erros) e backend `42f7a39` (ADC/Cloud e contratos HTTP).
-- Configuração real do app Web, Authentication E-mail/Senha e Google habilitados, Firestore Cloud DEV existente e regras restritivas consultados. Nenhum recurso de infraestrutura recriado ou deploy de regras.
-- Smoke Cloud real de API: cadastro, ID Tokens, PUT/GET autenticados, confirmação por código oficial, isolamento e Firestore direto negado; limpeza individual verificada.
-- Emuladores permanecem separados de Cloud e os builds padrão de produção não apontam permanentemente para DEV.
+- Fundação `8ae3b26`, integração de identidade/perfis `2288209` e Firebase Cloud DEV `9d4d998`.
+- Checkpoint 5C: frontend `3ac502a` e backend `23493d6` integrados. Avaliação Inicial com Corpo, Saúde, Rotina, Alimentação e Revisão; salvamento e retomada; IMC, TMB, GET heurístico, referências de peso e segurança; resultados versionados por usuário.
+- Integração real Angular → Nest → Firestore comprovada com emuladores oficiais e dados temporários. Sem nova escrita Cloud neste checkpoint. [Contrato, limites e testes](assessment.md).
 
-## Próximo checkpoint recomendado
+## Checkpoint 6 — próximo escopo a especificar
 
-Concluir a validação interativa de Google com uma conta autorizada e entrega/recuperação de e-mail em caixa postal real; revisar quotas e políticas de e-mail de desenvolvimento sem habilitar faturamento. Estabilizar essa experiência antes de novos domínios. Configuração e limitações em [Firebase Cloud DEV](firebase-cloud-dev.md).
+Definir contratos do acompanhamento/Adaptação de 30 dias, consentimento e minimização dos dados, retenção/exclusão, histórico e salvaguardas antes de implementar calendário ou recomendações. Preservar o backend como autoridade e não ativar automaticamente déficit ou modalidades intensificadas com base em autodeclarações.
 
-Depois, definir contratos de consentimento, minimização de dados e requisitos da avaliação inicial antes de autorizar implementação. Agentes futuros podem abrir branches a partir da main integrada, respeitando propriedade de arquivos, lockfile único e worktrees conforme AGENTS.md. CI GitHub continua bloqueada por cobrança; workflow preservado.
+Revisão especializada dos fatores heurísticos de energia continua necessária antes de gerar recomendações. Google pessoal e entrega de e-mails exigem validação interativa. A CI GitHub continua bloqueada por cobrança externa, com workflow preservado.
 
-## Posterior — ainda não implementado
+Agentes futuros podem criar branches a partir da main integrada, respeitando worktrees, contratos e propriedade de arquivos em AGENTS.md. Mudanças no contrato devem atualizar tipos de transporte, adaptador e testes reais na mesma integração.
 
-Avaliação corporal/rotina/objetivos; IMC e fórmulas estimativas com referência no backend; Adaptação de 30 dias; catálogo alimentar e preparos; registros diários, exercícios, histórico de peso e gráficos; ajustes auditáveis e PDF. Depois: Foco Total, controle glicêmico, exames e sono.
+## Posterior — não implementado
 
-Avaliação e Adaptação atuais são apenas avisos. Roadmap não autoriza implementar esses módulos.
+Calendário e plano Adaptação; catálogo alimentar/preparos; registros diários em gramas, calorias/macros/fibras; exercícios registrados; histórico semanal de peso/gráficos; ajustes rastreáveis e PDF. Depois: Foco Total, controle glicêmico, exames e sono.
+
+As rotas de avaliação agora são funcionais; Adaptação continua somente apresentação de módulo futuro. Roadmap não autoriza implementar etapas posteriores.

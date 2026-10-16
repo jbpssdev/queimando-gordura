@@ -23,7 +23,7 @@
 - Definir recuperação, backups e resposta a incidentes. Preservar integridade/histórico, versões de fórmulas e rastreabilidade dos ajustes sem perpetuar dados após exclusão legítima.
 - Auditoria de acesso minimizada, segregada e com retenção definida; evitar dados clínicos em logs e métricas.
 
-Estes são requisitos de implementação futura, não declaração de conformidade LGPD. O perfil básico armazena nome, sobrenome, e-mail e autodeclaração de maioridade; dados corporais e de saúde não são coletados neste checkpoint. Limitações clínicas e funcionais estão em [product.md](product.md).
+Estes são requisitos de implementação futura, não declaração de conformidade LGPD. O perfil básico armazena nome, sobrenome, e-mail e autodeclaração de maioridade; a Avaliação Inicial do checkpoint 5C passa a suportar dados corporais e de saúde; antes de coleta real, bases legais, consentimento, retenção e acesso administrativo exigem revisão. Limitações clínicas e funcionais estão em [product.md](product.md).
 
 ## Dependências no checkpoint 0
 
@@ -34,3 +34,5 @@ Overrides mantêm gRPC em patch corrigido e Undici 7 corrigido, e fixam a famíl
 No checkpoint 2, AuthGuard verifica Firebase ID Tokens e UsersService deriva o documento exclusivamente do uid autenticado. GET exige e-mail confirmado; PUT permite completar cadastro pré-confirmação. Testes reais comprovam isolamento entre identidades, rejeição de uid injetado e regras de negação do Firestore web. Tokens não são registrados em logs e traces/HAR dos testes de autenticação são desativados. Privacidade, retenção, exportação/exclusão e revisão de nuvem continuam requisitos antes de coleta de dados sensíveis.
 
 No checkpoint 4, a validação Cloud DEV confirmou tokens reais, isolamento entre duas identidades, persistência exclusivamente pela API e negação de acesso direto pelo Firestore. ADC OAuth de usuário fica fora do repositório, com acesso Windows restrito; nenhuma chave de conta de serviço foi criada. Testes Cloud têm lista explícita com somente queimando-gordura-783e4, autorização por ambiente e limpeza verificada dos próprios recursos. Configuração pública do app Web existe apenas no ambiente Cloud DEV explícito. Login Google pessoal, entrega de mensagens e controles necessários antes de coletar dados sensíveis ainda exigem validação específica.
+
+No checkpoint 5C, a avaliação e seus resultados exigem ID Token e e-mail confirmado; proprietário vem do uid autenticado. Testes reais em emuladores conferem isolamento, tentativa de UID injetado, negação do Firestore direto, expiração de token, revisão e limpeza de todos os snapshots temporários. O formulário não fica editável durante falha/carregamento de um rascunho existente. Dados de saúde não são gravados no localStorage. Nenhuma sinalização constitui diagnóstico/liberação médica, e as flags de planos automáticos continuam desabilitadas. Veja [Avaliação Inicial](assessment.md).

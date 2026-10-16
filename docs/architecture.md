@@ -2,7 +2,7 @@
 
 ## Decisão principal
 
-Aplicação Angular standalone, mobile-first, com Router, lazy loading e Signals para estado local. API REST NestJS por módulos de domínio. npm workspaces, sem Nx/Turborepo, banco relacional ou ferramentas de orquestração. Autenticação Firebase, perfis individuais, landing e painel básico integrados no checkpoint 2. Avaliação e Adaptação seguem como avisos, sem regras de produto.
+Aplicação Angular standalone, mobile-first, com Router, lazy loading e Signals para estado local. API REST NestJS por módulos de domínio. npm workspaces, sem Nx/Turborepo, banco relacional ou ferramentas de orquestração. Autenticação Firebase, perfis individuais, landing e painel básico integrados no checkpoint 2. Avaliação Inicial foi integrada no checkpoint 5C; calendário/plano Adaptação permanece futuro.
 
 ## Autenticação e acesso a dados
 
@@ -16,7 +16,7 @@ Aplicação Angular standalone, mobile-first, com Router, lazy loading e Signals
 
 Dados pessoais, avaliações, refeições e progresso serão acessados exclusivamente pela API. O navegador poderá usar diretamente Firebase Authentication; não acessará essas coleções com o SDK Firestore. Não haverá autenticação paralela nem duas fontes de verdade para os registros.
 
-Nunca usar `userId` recebido do cliente para autorizar registros. Os guards extraem a identidade do token validado; consultas, gravações e operações em lote precisam verificar propriedade e escopo no backend. Sugestão futura de organização: subcoleções sob `users/{uid}`, a definir quando os modelos forem implementados. A coleção users/{uid} armazena o perfil básico; demais coleções permanecem futuras.
+Nunca usar `userId` recebido do cliente para autorizar registros. Os guards extraem a identidade do token validado; consultas, gravações e operações em lote precisam verificar propriedade e escopo no backend. Sugestão futura de organização: subcoleções sob `users/{uid}`, a definir quando os modelos forem implementados. A coleção users/{uid} armazena o perfil básico. Avaliação Inicial reside em users/{uid}/assessments/initial, com snapshots de resultados por revisão; demais domínios permanecem futuros.
 
 O Admin SDK ignora regras Firestore; autorização própria da API é obrigatória, inclusive para acesso por ID direto. As regras atuais negam toda leitura/escrita por clientes, autenticados ou não. Firebase Admin e credenciais administrativas jamais entram no bundle Angular.
 
@@ -69,3 +69,7 @@ Testes reais usam emuladores oficiais, tokens emitidos por Auth, persistência F
 Cloud DEV usa exclusivamente queimando-gordura-783e4. O ambiente Angular cloud-development contém os identificadores públicos consultados pelo MCP, separado do build de produção e de emuladores. O backend prefere applicationDefault() com ADC externa; FIREBASE_USE_ADC=true permite arquivos authorized_user sem tratá-los como certificados de conta de serviço. O nome legado do modo Cloud é production, independente do NODE_ENV de desenvolvimento.
 
 A API mantém os mesmos contratos e a mesma autorização por token; Minha Conta consulta GET /api/v1/users/me. O teste Cloud cria identidades com SDK cliente, usa ID Tokens reais pela API, confirma por código oficial de ação, verifica isolamento e regras Cloud e remove apenas os próprios recursos. Os runners e suítes exigem lista explícita contendo somente o projeto DEV. Detalhes e limitações no [guia Cloud DEV](firebase-cloud-dev.md).
+
+## Avaliação Inicial — checkpoint 5C
+
+O módulo assessment valida seções, calcula métricas e aplica sinalizações de segurança no backend. O frontend traduz DTOs de apresentação para o contrato de transporte, sem implementar fórmulas metabólicas. Persistência transacional incrementa revisão, remove opcionais quando solicitado e impede conclusão de revisão alterada durante cálculo. Snapshots históricos permanecem íntegros. Veja [contrato e limites](assessment.md). Estado de saúde fica apenas em memória de tela e no Firestore via API; troca de identidade cancela requisições e limpa esse estado. Testes isolam serviços em 4201/3105 e preservam a sessão Cloud de desenvolvimento em 4200/3100.

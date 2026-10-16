@@ -1,6 +1,6 @@
 # Queimando Gordura 1.0
 
-Monorepo Angular 22 + NestJS 12. Checkpoint 4 integra `7b4782a` (frontend Firebase live) e `42f7a39` (backend Cloud) sobre `2288209`. Autenticação, perfis individuais e Minha Conta estão implementados. Avaliação corporal, IMC, calorias e Adaptação continuam **não implementados**; suas rotas são apenas avisos.
+Monorepo Angular 22 + NestJS 12. Checkpoint 5C integra frontend `3ac502a` e backend `23493d6` sobre `9d4d998`. Autenticação, perfis, Minha Conta e Avaliação Inicial com rascunho, cálculos no servidor e resultados versionados estão implementados. Calendário e plano Adaptação continuam não implementados.
 
 ## Executar e visualizar
 
@@ -21,7 +21,7 @@ Esta máquina possui `backend/.env.cloud.local` ignorado e ADC externa já confi
 | Firestore Emulator, somente modo emulator | http://127.0.0.1:8080               |
 | Emulator UI, somente modo emulator        | http://127.0.0.1:4000               |
 
-Acesse `/`, `/cadastrar`, `/entrar`, `/verificar-email`, `/painel` e `/minha-conta`. Confirme o e-mail antes de acessar o painel e Minha Conta. O health informa somente o processo HTTP, sem declarar conexão com Firebase.
+Acesse `/`, `/cadastrar`, `/entrar`, `/verificar-email`, `/painel`, `/minha-conta`, `/avaliacao` e `/avaliacao/resultados`. Confirme o e-mail antes de acessar o painel e Minha Conta. O health informa somente o processo HTTP, sem declarar conexão com Firebase.
 
 Para desenvolvimento sem segredos, use `npm run dev:emulator`: inicia Auth/Firestore Emulator, Angular em configuração emulator e Nest em projeto demo fixo. Requer Java 21+; o script reconhece a JRE portátil local em `.tools/java`, ignorada pelo Git. `npm run dev` conserva Firebase desativado para inspeção da interface e endpoints protegidos retornam 503. Não há login falso.
 
@@ -67,7 +67,7 @@ O nome legado `FIREBASE_MODE=production` seleciona o SDK Cloud no backend; em DE
 | `npm run test:cloud:browser`                       | Navegador Angular contra serviços Cloud DEV                               |
 | `npm run validate`                                 | Regressão local completa; não cria recursos Cloud                         |
 
-Testes de navegador requerem Chromium do Playwright (`npx playwright install chromium` uma vez; em Linux CI, `--with-deps`). Execute as suítes que usam servidores sequencialmente, após build Nest. Elas encerram seus servidores e não reutilizam sessões existentes. Cloud usa porta 4202 durante a automação; emuladores usam 4201; `QG_FRONTEND_PORT` permite uma porta de teste explícita.
+Testes de navegador requerem Chromium do Playwright (`npx playwright install chromium` uma vez; em Linux CI, `--with-deps`). Execute as suítes que usam servidores sequencialmente, após build Nest. Elas encerram seus servidores e não reutilizam sessões existentes. Cloud usa 4202/3100 durante a automação; integração com emuladores usa 4201/3105 e smoke usa 4203/3105; `QG_FRONTEND_PORT` permite uma porta de teste explícita.
 
 Testes Cloud exigem uma lista explícita contendo somente `queimando-gordura-783e4`, autorização por ambiente e ausência de emuladores. Criam identidades/senhas aleatórias e removem somente seus próprios documentos e usuários, com confirmação da limpeza. Não limpam coleções ou modificam contas preexistentes. Traces/HAR de autenticação estão desativados para evitar tokens nos artefatos.
 
@@ -90,3 +90,11 @@ A CI foi preservada, sem deploy. GitHub Actions permanece bloqueado externamente
 Validação Cloud DEV por navegador também aprovada: cadastro Angular, persistência, confirmação por código oficial, sessão após reload, painel, Minha Conta, logout/login, tratamento de credenciais inválidas e solicitação de recuperação aceita pelo Firebase. Confirmação de recebimento em caixa postal e login Google pessoal permanecem pendentes.
 
 Validação local do checkpoint 4: 122 testes aprovados — 53 Angular, 35 Nest, 2 travas de segurança Cloud, 22 HTTP, 1 integrado backend/emuladores, 4 fluxos Angular/emuladores, 1 teste de regras, 2 smoke responsivos, 1 integrado Cloud/API e 1 fluxo Angular/Cloud. Formatação, lint, tipos, builds Angular/Nest, npm ci, workspaces e consistência do lockfile aprovados. Integrações opcionais são ignoradas no comando HTTP sem configuração e foram executadas separadamente com os serviços reais correspondentes. Emuladores e recursos temporários dos testes foram encerrados/removidos.
+
+## Avaliação Inicial — checkpoint 5C
+
+Cinco etapas: Corpo, Saúde, Rotina, Alimentação e Revisão. Seções são salvas explicitamente pela API e recuperadas do Firestore após interrupção; alterações ainda não salvas ficam somente no formulário. IMC, TMB, GET heurístico, referência de 5% e peso desejado são calculados no backend, com orientações de segurança, pendências e revisão. Resultados anteriores são preservados e uma edição exige recálculo. Nenhum plano automático é gerado e nenhum dado de saúde vai ao localStorage.
+
+Contratos: GET/PATCH /api/v1/assessments/me, POST /api/v1/assessments/me/evaluate e GET /api/v1/assessments/me/results. Consulte [Avaliação Inicial: campos, fórmulas, limites, persistência e testes](docs/assessment.md). A jornada deste checkpoint foi testada somente com dados temporários em emuladores, sem alterar registros Cloud preexistentes. As configurações Firebase DEV e produção foram preservadas.
+
+Validação final do checkpoint 5C: `npm run validate` aprovado, com **252 testes** — 104 Angular, 97 Nest, 2 travas Cloud (unitárias), 36 HTTP, 3 integrações reais backend/emuladores, 7 fluxos de navegador/emuladores, 2 smoke responsivos e 1 teste de regras. Formatação, lint, typecheck, builds e workspaces aprovados; lockfile sem alteração de dependências. A jornada da avaliação foi verificada em 320/390/768/1440 px, com contraste do botão principal, rascunho restaurado, cálculos da API, recálculo, revisão anterior preservada e isolamento. A consulta Cloud opcional não foi executada neste checkpoint. Dados temporários e emuladores foram removidos/encerrados; a sessão Cloud DEV anterior foi preservada.
