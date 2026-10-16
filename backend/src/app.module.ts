@@ -6,6 +6,7 @@ import { FirebaseModule } from './modules/firebase/firebase.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { AssessmentModule } from './modules/assessment/assessment.module.js';
+import { AdaptationModule } from './modules/adaptation/adaptation.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AssessmentModule } from './modules/assessment/assessment.module.js';
     AuthModule,
     UsersModule,
     AssessmentModule,
+    AdaptationModule,
     HealthModule,
   ],
 })

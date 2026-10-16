@@ -44,6 +44,8 @@ describe.runIf(isEmulatorRunning)('Integração Real com Firebase Emulator Suite
         for (const result of ownedResults.docs) await result.ref.delete();
         expect((await assessDoc.collection('results').get()).empty).toBe(true);
         await assessDoc.delete();
+        const adaptDoc = reference.collection('adaptations').doc('initial');
+        await adaptDoc.delete();
         await reference.delete();
         await firebase.getAuth().deleteUser(uid);
         expect((await reference.get()).exists).toBe(false);
@@ -398,5 +400,149 @@ describe.runIf(isEmulatorRunning)('Integração Real com Firebase Emulator Suite
       .get('/api/v1/assessments/me')
       .set('Authorization', `Bearer ${expired}`)
       .expect(401);
+  }, 30000);
+
+  it('persiste plano de adaptação de 30 dias, valida elegibilidade, isola usuários e bloqueia acesso direto no Firestore Emulator', async () => {
+    const server = app.getHttpServer();
+    const person = await createIdentity();
+    const token = await confirmAndRefresh(person);
+
+    // 1. Cria perfil e avaliação completa
+    await request(server)
+      .put('/api/v1/users/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ firstName: 'Adapt', lastName: 'User', age18Confirmed: true })
+      .expect(200);
+
+    const sections = {
+      body: {
+        dateOfBirth: '1992-05-10',
+        sexForMetabolicFormula: 'male' as const,
+        heightCm: 175,
+        weightKg: 75,
+        scaleType: 'standard' as const,
+      },
+      health: {
+        conditions: [],
+        hasNoKnownConditions: true,
+        isConditionUnknown: false,
+        symptoms: ['none'],
+      },
+      routine: {
+        workPattern: 'sedentary' as const,
+        sittingHoursPerDay: 8,
+        dailyMovementLevel: 'low' as const,
+        strengthTraining: { frequencyDaysPerWeek: 3, durationMinutes: 45, intensity: 'moderate' as const },
+        cardioTraining: { frequencyDaysPerWeek: 2, durationMinutes: 30, intensity: 'light' as const },
+      },
+      nutrition: {
+        mealsPerDay: 3,
+        mealRegularity: 'regular' as const,
+        hasKitchenScale: true,
+        sweetenedDrinksFrequency: 'never' as const,
+        alcoholFrequency: 'never' as const,
+        budgetConstrained: false,
+        dietaryPreferences: ['omnivore'],
+        allergies: [],
+        intolerances: [],
+        dietaryRestrictions: [],
+        mealSources: ['home_cooked'],
+        weightLossChallenges: [],
+      },
+    };
+
+    for (const section of ['body', 'health', 'routine', 'nutrition'] as const) {
+      await request(server)
+        .patch('/api/v1/assessments/me')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ section, data: sections[section] })
+        .expect(200);
+    }
+
+    await request(server)
+      .post('/api/v1/assessments/me/evaluate')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    // 2. Consulta prévia da adaptação
+    const previewRes = await request(server)
+      .get('/api/v1/adaptation/me/preview')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(previewRes.body.recommendedMode).toBe('standard');
+    expect(previewRes.body.modes.standard.available).toBe(true);
+    expect(previewRes.body.modes.intensified.available).toBe(false);
+    expect(previewRes.body.calorieTargetAvailable).toBe(false);
+
+    // 3. Inicia o plano de 30 dias (201 Created)
+    const startRes = await request(server)
+      .post('/api/v1/adaptation/me/start')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ mode: 'standard', timeZone: 'America/Recife' })
+      .expect(201);
+
+    expect(startRes.body.id).toBe('initial');
+    expect(startRes.body.mode).toBe('standard');
+    expect(startRes.body.status).toBe('active');
+    expect(startRes.body.currentDay).toBe(1);
+    expect(startRes.body.elapsedDays).toBe(0);
+    expect(startRes.body.remainingDays).toBe(29);
+    expect(startRes.body.calendarProgressPercent).toBe(3.3);
+    expect(startRes.body.calendar).toHaveLength(30);
+    expect(startRes.body.calorieTarget).toBeNull();
+
+    // 4. Verifica persistência real no Firestore Emulator
+    const adaptDocRef = firebase
+      .getFirestore()
+      .doc(`users/${person.localId}/adaptations/initial`);
+
+    const snap = await adaptDocRef.get();
+    expect(snap.exists).toBe(true);
+    expect(snap.data()?.['mode']).toBe('standard');
+    expect(snap.data()?.['status']).toBe('active');
+    expect(snap.data()?.['timeZone']).toBe('America/Recife');
+
+    // 5. Bloqueio de acesso cliente direto ao documento de adaptação no Firestore
+    const directAccess = await fetch(
+      `http://127.0.0.1:8080/v1/projects/${projectId}/databases/(default)/documents/users/${person.localId}/adaptations/initial`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    expect(directAccess.status).toBe(403);
+
+    // 6. Repetição idempotente da mesma solicitação (200 OK)
+    const repeatRes = await request(server)
+      .post('/api/v1/adaptation/me/start')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ mode: 'standard', timeZone: 'America/Recife' })
+      .expect(200);
+
+    expect(repeatRes.body.startedAt).toBe(startRes.body.startedAt);
+
+    // 7. Tentativa de reiniciar ou alterar fuso produz 409
+    await request(server)
+      .post('/api/v1/adaptation/me/start')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ mode: 'standard', timeZone: 'Europe/London' })
+      .expect(409);
+
+    // 8. Consulta do plano (GET /me)
+    const getRes = await request(server)
+      .get('/api/v1/adaptation/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(getRes.body.id).toBe('initial');
+    expect(getRes.body.status).toBe('active');
+    expect(getRes.body.calendar[0].temporalState).toBe('today');
+
+    // 9. Segundo usuário não acessa o plano do primeiro (404)
+    const otherPerson = await createIdentity();
+    const otherToken = await confirmAndRefresh(otherPerson);
+
+    await request(server)
+      .get('/api/v1/adaptation/me')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .expect(404);
   }, 30000);
 });
