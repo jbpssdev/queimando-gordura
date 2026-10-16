@@ -51,14 +51,19 @@ export function validateEnvironment(input: Record<string, unknown>) {
   }
   if (firebaseMode === 'production') {
     const credentials = String(input.GOOGLE_APPLICATION_CREDENTIALS ?? '');
-    if (
-      !projectId ||
-      projectId.startsWith('demo-') ||
-      !isAbsolute(credentials) ||
-      !existsSync(credentials)
-    ) {
+    const useAdc = String(input.FIREBASE_USE_ADC ?? 'false') === 'true';
+
+    if (!projectId || projectId.startsWith('demo-')) {
+      throw new Error('Firebase de nuvem/produção exige projeto real e não demo-.');
+    }
+    if (!credentials && !useAdc) {
       throw new Error(
-        'Firebase de produção exige projeto real e arquivo de credenciais externo existente.',
+        'Firebase de produção exige projeto real e arquivo de credenciais externo existente ou FIREBASE_USE_ADC=true.',
+      );
+    }
+    if (credentials && (!isAbsolute(credentials) || !existsSync(credentials))) {
+      throw new Error(
+        'GOOGLE_APPLICATION_CREDENTIALS deve ser um arquivo existente com caminho absoluto.',
       );
     }
   }

@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { isAbsolute } from 'node:path';
 import {
   Inject,
   Injectable,
@@ -6,7 +8,14 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { initializeApp, getApps, getApp, deleteApp, cert } from 'firebase-admin/app';
+import {
+  applicationDefault,
+  initializeApp,
+  getApps,
+  getApp,
+  deleteApp,
+  cert,
+} from 'firebase-admin/app';
 import type { App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import type { Auth } from 'firebase-admin/auth';
@@ -52,23 +61,35 @@ export class FirebaseService implements OnApplicationShutdown {
     }
 
     if (this.mode === 'production') {
+      // Previne conexão acidental a emuladores em modo cloud/produção
+      delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+      delete process.env.FIRESTORE_EMULATOR_HOST;
+
       const projectId = this.configService.getOrThrow<string>('FIREBASE_PROJECT_ID');
-      const credentialsPath = this.configService.getOrThrow<string>(
+      const credentialsPath = this.configService.get<string>(
         'GOOGLE_APPLICATION_CREDENTIALS',
       );
 
       const existingApps = getApps();
+      const credential =
+        credentialsPath && isAbsolute(credentialsPath) && existsSync(credentialsPath)
+          ? cert(credentialsPath)
+          : applicationDefault();
+
       this.app =
         existingApps.length > 0
           ? getApp()
           : initializeApp({
-              credential: cert(credentialsPath),
+              credential,
               projectId,
             });
 
       this.auth = getAuth(this.app);
       this.firestore = getFirestore(this.app);
-      this.logger.log(`Firebase Admin inicializado para produção (projeto: ${projectId}).`);
+      const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
+      this.logger.log(
+        `Firebase Admin conectado ao Cloud (${nodeEnv === 'production' ? 'produção' : 'desenvolvimento'}, projeto: ${projectId}).`,
+      );
     }
   }
 
