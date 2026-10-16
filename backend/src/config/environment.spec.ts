@@ -31,4 +31,22 @@ describe('configuração de ambiente', () => {
       }).FIREBASE_MODE,
     ).toBe('emulator');
   });
+  it('aceita modo nuvem/produção com projeto real e FIREBASE_USE_ADC=true', () => {
+    expect(
+      validateEnvironment({
+        FIREBASE_MODE: 'production',
+        FIREBASE_PROJECT_ID: 'queimando-gordura-dev',
+        FIREBASE_USE_ADC: 'true',
+      }).FIREBASE_MODE,
+    ).toBe('production');
+  });
+  it('rejeita modo nuvem/produção com projeto demo-', () => {
+    expect(() =>
+      validateEnvironment({
+        FIREBASE_MODE: 'production',
+        FIREBASE_PROJECT_ID: 'demo-queimando-gordura',
+        FIREBASE_USE_ADC: 'true',
+      }),
+    ).toThrow();
+  });
 });

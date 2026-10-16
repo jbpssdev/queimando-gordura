@@ -7,6 +7,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   updateProfile,
   sendEmailVerification,
@@ -86,6 +88,20 @@ export class FirebaseAuthService {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     return signInWithPopup(auth, provider);
+  }
+
+  public async signInWithGoogleRedirect(): Promise<void> {
+    const auth = this.requireAuth();
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    await signInWithRedirect(auth, provider);
+  }
+
+  public async getRedirectResult(): Promise<UserCredential | null> {
+    if (!this.auth) {
+      return null;
+    }
+    return getRedirectResult(this.auth);
   }
 
   public async updateDisplayName(displayName: string): Promise<void> {

@@ -61,6 +61,14 @@
                   "with": "src/environments/environment.emulator.ts"
                 }
               ]
+            },
+            "cloud-development": {
+              "fileReplacements": [
+                {
+                  "with": "src/environments/environment.cloud-development.ts",
+                  "replace": "src/environments/environment.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -76,6 +84,9 @@
             },
             "emulator": {
               "buildTarget": "frontend:build:development,emulator"
+            },
+            "cloud-development": {
+              "buildTarget": "frontend:build:development,cloud-development"
             }
           },
           "defaultConfiguration": "development",

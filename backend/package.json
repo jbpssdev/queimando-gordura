@@ -14,12 +14,13 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main.js",
     "lint": "eslint \"{src,test}/**/*.ts\"",
-    "test": "vitest run",
+    "test": "node --test scripts/cloud-safety.test.mjs && vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "test:emulator": "node scripts/test-emulators.mjs",
+    "test:cloud": "node scripts/test-cloud.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {

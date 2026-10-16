@@ -38,6 +38,12 @@ import { AuthSessionService } from '../../../core/auth/auth-session.service';
                 Início
               </a>
               <a
+                routerLink="/minha-conta"
+                class="rounded-md px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              >
+                Minha conta
+              </a>
+              <a
                 routerLink="/avaliacao"
                 class="rounded-md px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
               >
@@ -199,7 +205,15 @@ import { AuthSessionService } from '../../../core/auth/auth-session.service';
                 </p>
               </div>
             </div>
-            <div class="mt-6 pt-4 border-t border-border">
+            <div class="mt-6 pt-4 border-t border-border flex flex-col gap-2">
+              <a
+                routerLink="/minha-conta"
+                hlmBtn
+                variant="outline"
+                class="w-full text-xs font-medium"
+              >
+                Visualizar Minha Conta
+              </a>
               <button
                 hlmBtn
                 variant="ghost"

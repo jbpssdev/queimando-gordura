@@ -16,6 +16,8 @@ describe('Login Component', () => {
       isConfigured: () => true,
       signInWithEmailAndPassword: vi.fn().mockResolvedValue({} as unknown as UserCredential),
       signInWithGoogle: vi.fn().mockResolvedValue({} as unknown as UserCredential),
+      signInWithGoogleRedirect: vi.fn().mockResolvedValue(undefined),
+      getRedirectResult: vi.fn().mockResolvedValue(null),
     };
 
     mockAuthSession = {
@@ -120,7 +122,7 @@ describe('Login Component', () => {
     expect(component['errorMessage']()).toContain('E-mail ou senha incorretos');
   });
 
-  it('executa login com Google através do provedor oficial', async () => {
+  it('executa login com Google através do provedor oficial via popup', async () => {
     const fixture = TestBed.createComponent(Login);
     fixture.detectChanges();
 
@@ -129,5 +131,52 @@ describe('Login Component', () => {
 
     expect(mockFirebaseAuth.signInWithGoogle).toHaveBeenCalled();
     expect(router.navigateByUrl).toHaveBeenCalledWith('/painel');
+  });
+
+  it('habilita opção de redirecionamento quando popup é bloqueado pelo navegador', async () => {
+    vi.mocked(mockFirebaseAuth.signInWithGoogle)!.mockRejectedValueOnce({
+      code: 'auth/popup-blocked',
+    });
+
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance;
+    await component['onGoogleLogin']();
+    fixture.detectChanges();
+
+    expect(component['showGoogleRedirectOption']()).toBe(true);
+    expect(component['errorMessage']()).toContain('bloqueada pelo navegador');
+
+    await component['onGoogleLoginRedirect']();
+    expect(mockFirebaseAuth.signInWithGoogleRedirect).toHaveBeenCalled();
+  });
+
+  it('restaura sessão do Google ao retornar de redirecionamento via ngOnInit', async () => {
+    vi.mocked(mockFirebaseAuth.getRedirectResult)!.mockResolvedValueOnce({
+      user: { uid: 'u-google', emailVerified: true } as User,
+    } as unknown as UserCredential);
+
+    const fixture = TestBed.createComponent(Login);
+    await fixture.componentInstance.ngOnInit();
+
+    expect(mockAuthSession.refreshSession).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/painel');
+  });
+
+  it('trata erro de domínio não autorizado no Firebase Console', async () => {
+    vi.mocked(mockFirebaseAuth.signInWithGoogle)!.mockRejectedValueOnce({
+      code: 'auth/unauthorized-domain',
+    });
+
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance;
+    await component['onGoogleLogin']();
+
+    expect(component['errorMessage']()).toContain(
+      'não está autorizado para autenticação com o Google',
+    );
   });
 });

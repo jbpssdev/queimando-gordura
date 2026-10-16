@@ -29,7 +29,12 @@
     "test:integration": "node scripts/emulators.mjs --integration",
     "dev:frontend:emulator": "npm run start --workspace frontend -- --configuration emulator",
     "dev:backend:emulator": "node scripts/dev-backend-emulator.mjs",
-    "dev:emulator": "concurrently --kill-others --names firebase,frontend,backend \"npm run emulators\" \"npm run dev:frontend:emulator\" \"npm run dev:backend:emulator\""
+    "dev:emulator": "concurrently --kill-others --names firebase,frontend,backend \"npm run emulators\" \"npm run dev:frontend:emulator\" \"npm run dev:backend:emulator\"",
+    "dev:frontend:cloud": "npm run start --workspace frontend -- --configuration cloud-development",
+    "dev:backend:cloud": "node scripts/dev-backend-cloud.mjs",
+    "dev:cloud": "concurrently --kill-others --names frontend,backend \"npm run dev:frontend:cloud\" \"npm run dev:backend:cloud\"",
+    "test:cloud": "npm run test:cloud --workspace backend",
+    "test:cloud:browser": "playwright test --config playwright.cloud.config.ts"
   },
   "devDependencies": {
     "prettier": "3.8.5",

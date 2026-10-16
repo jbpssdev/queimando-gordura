@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -134,7 +134,7 @@ export class VerifyEmail {
   protected readonly resendFeedback = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
 
-  protected readonly userEmail = signal<string>(this.session.currentUser()?.email ?? 'seu e-mail');
+  protected readonly userEmail = computed(() => this.session.currentUser()?.email ?? 'seu e-mail');
 
   private cooldownTimer: ReturnType<typeof setInterval> | null = null;
 

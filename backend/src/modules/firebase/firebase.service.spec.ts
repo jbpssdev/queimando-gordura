@@ -62,4 +62,27 @@ describe('FirebaseService', () => {
     await service.onApplicationShutdown();
     expect(service.isAvailable()).toBe(false);
   });
+
+  it('em modo production/nuvem, remove variáveis de emulador e inicializa com ADC', () => {
+    process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
+    process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+
+    const configMap: Record<string, string> = {
+      FIREBASE_MODE: 'production',
+      FIREBASE_PROJECT_ID: 'queimando-gordura-dev',
+    };
+    const configService = {
+      get: vi.fn((key: string, defaultVal?: unknown) => configMap[key] ?? defaultVal),
+      getOrThrow: vi.fn((key: string) => {
+        if (!configMap[key]) throw new Error(`Missing ${key}`);
+        return configMap[key];
+      }),
+    } as unknown as ConfigService;
+
+    const service = new FirebaseService(configService);
+    expect(service.isAvailable()).toBe(true);
+    expect(service.getMode()).toBe('production');
+    expect(process.env.FIREBASE_AUTH_EMULATOR_HOST).toBeUndefined();
+    expect(process.env.FIRESTORE_EMULATOR_HOST).toBeUndefined();
+  });
 });

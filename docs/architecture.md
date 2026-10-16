@@ -40,7 +40,7 @@ O Admin SDK ignora regras Firestore; autorização própria da API é obrigatór
 
 ## Ambientes e UI
 
-Frontend usa `/api`, proxy local em 4200 para 3100 e futuro proxy reverso de mesma origem em produção. Nest valida `NODE_ENV`, portas, origens e modo Firebase. Produção exige CORS explícito HTTPS. Firebase desativado permite o health sem segredos; modo produção exige projeto real e arquivo administrativo externo existente. A validação não afirma que a credencial é válida ou que houve conexão. Emuladores exigem projeto demo, hosts loopback e ambiente não produtivo.
+Frontend usa `/api`, proxy local em 4200 para 3100 e futuro proxy reverso de mesma origem em produção. Nest valida `NODE_ENV`, portas, origens e modo Firebase. Produção exige CORS explícito HTTPS. Firebase desativado permite o health sem segredos; modo Cloud exige projeto real e ADC autorizada ou arquivo administrativo externo existente. A validação não afirma que a credencial é válida ou que houve conexão. Emuladores exigem projeto demo, hosts loopback e ambiente não produtivo.
 
 Spartan Brain é dependência npm; componentes Helm Button/Card e utilitário são copiados pelo gerador oficial para `frontend/src/app/shared/ui`. Tokens semânticos de cor, tipografia, raio e foco vivem em `styles.css`. Apenas tema claro. Novos temas podem substituir tokens posteriormente. Preferência de movimento reduzido é respeitada; foco visível e acesso por teclado preservados.
 
@@ -63,3 +63,9 @@ Angular usa o interceptor somente para chamadas relativas /api, renova o token d
 Modo emulator do Angular tem substituição de arquivo explícita e somente projeto demo/hosts loopback; padrão e produção permanecem desativados sem configuração. Admin é inicializado no backend somente quando habilitado e a configuração é validada; ausência de Firebase retorna 503 nos endpoints protegidos. SDKs não afirmam conectividade só porque foram inicializados.
 
 Testes reais usam emuladores oficiais, tokens emitidos por Auth, persistência Firestore e limpeza individual em hooks. O navegador confirma o e-mail com o código emitido pelo emulador e usa a API pelo proxy. Esses testes não validam IAM, entrega de e-mail ou OAuth reais. [Diferenças oficiais do emulador](https://firebase.google.com/docs/emulator-suite/connect_auth).
+
+## Integração Cloud DEV — checkpoint 4
+
+Cloud DEV usa exclusivamente queimando-gordura-783e4. O ambiente Angular cloud-development contém os identificadores públicos consultados pelo MCP, separado do build de produção e de emuladores. O backend prefere applicationDefault() com ADC externa; FIREBASE_USE_ADC=true permite arquivos authorized_user sem tratá-los como certificados de conta de serviço. O nome legado do modo Cloud é production, independente do NODE_ENV de desenvolvimento.
+
+A API mantém os mesmos contratos e a mesma autorização por token; Minha Conta consulta GET /api/v1/users/me. O teste Cloud cria identidades com SDK cliente, usa ID Tokens reais pela API, confirma por código oficial de ação, verifica isolamento e regras Cloud e remove apenas os próprios recursos. Os runners e suítes exigem lista explícita contendo somente o projeto DEV. Detalhes e limitações no [guia Cloud DEV](firebase-cloud-dev.md).

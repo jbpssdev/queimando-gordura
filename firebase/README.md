@@ -1,12 +1,12 @@
 # Firebase — Queimando Gordura 1.0
 
-Configuração do Firebase Emulator Suite e regras de segurança do Cloud Firestore para a plataforma Queimando Gordura 1.0.
+Configuração do Firebase Emulator Suite, regras de segurança do Cloud Firestore e procedimento de deploy seguro para a plataforma Queimando Gordura 1.0.
 
 ---
 
 ## 1. Regras de Segurança do Firestore (`firestore.rules`)
 
-As regras negam categoricamente qualquer leitura ou escrita direta por clientes (anônimos ou autenticados via Firebase Client SDK):
+As regras negam categoricamente qualquer leitura ou escrita direta por clientes (anônimos ou autenticados via Firebase Client SDK Web):
 
 ```javascript
 rules_version = '2';
@@ -42,9 +42,15 @@ Os emuladores utilizam a JRE portátil em `.tools/java` quando Java global não 
 # Iniciar emuladores em primeiro plano com interface Web:
 npm run emulators
 
-# Executar testes das regras de segurança:
+# Executar testes das regras de segurança contra emulador:
 npm run test:rules
 
 # Executar testes integrados do backend com os emuladores:
 npm run test:emulator --workspace backend
 ```
+
+---
+
+## 3. Firebase Cloud DEV existente
+
+Projeto queimando-gordura-783e4, banco (default), Standard/Native em southamerica-east1, free tier e faturamento desabilitado. As regras publicadas foram consultadas pelo Firebase MCP e negam todo acesso direto. Não recriar o banco nem executar deploy-rules-dev.mjs durante a integração; nenhuma mudança de regras foi necessária. Consulte o [guia Cloud DEV](../docs/firebase-cloud-dev.md).

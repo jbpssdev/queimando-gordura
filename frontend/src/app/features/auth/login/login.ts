@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
@@ -23,6 +23,7 @@ import { FirebaseAuthService } from '../../../core/auth/firebase-auth.service';
     HlmAlertImports,
     HlmSeparator,
   ],
+
   template: `
     <div class="min-h-dvh bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <a class="skip-link" href="#login-form">Pular para o formulário de login</a>
@@ -196,6 +197,21 @@ import { FirebaseAuthService } from '../../../core/auth/firebase-auth.service';
                   isGoogleSubmitting() ? 'Conectando ao Google…' : 'Entrar com Google'
                 }}</span>
               </button>
+
+              @if (showGoogleRedirectOption()) {
+                <div class="mt-3">
+                  <button
+                    hlmBtn
+                    variant="secondary"
+                    type="button"
+                    (click)="onGoogleLoginRedirect()"
+                    [disabled]="isGoogleSubmitting() || isSubmitting()"
+                    class="w-full text-xs font-semibold"
+                  >
+                    Continuar login com Google por redirecionamento
+                  </button>
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -207,7 +223,7 @@ import { FirebaseAuthService } from '../../../core/auth/firebase-auth.service';
     </div>
   `,
 })
-export class Login {
+export class Login implements OnInit {
   protected readonly firebaseAuth = inject(FirebaseAuthService);
   private readonly session = inject(AuthSessionService);
   private readonly router = inject(Router);
@@ -216,6 +232,7 @@ export class Login {
   protected readonly showPassword = signal(false);
   protected readonly isSubmitting = signal(false);
   protected readonly isGoogleSubmitting = signal(false);
+  protected readonly showGoogleRedirectOption = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
 
   protected readonly form = new FormGroup({
@@ -228,6 +245,17 @@ export class Login {
       validators: [Validators.required],
     }),
   });
+
+  public async ngOnInit(): Promise<void> {
+    try {
+      const redirectResult = await this.firebaseAuth.getRedirectResult();
+      if (redirectResult?.user) {
+        await this.handlePostLoginRouting();
+      }
+    } catch (error) {
+      this.errorMessage.set(mapFirebaseAuthErrorMessage(error));
+    }
+  }
 
   protected get emailControl() {
     return this.form.controls.email;
@@ -272,9 +300,33 @@ export class Login {
     try {
       await this.firebaseAuth.signInWithGoogle();
       await this.handlePostLoginRouting();
-    } catch (error) {
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'auth/popup-blocked'
+      ) {
+        this.showGoogleRedirectOption.set(true);
+      }
       this.errorMessage.set(mapFirebaseAuthErrorMessage(error));
     } finally {
+      this.isGoogleSubmitting.set(false);
+    }
+  }
+
+  protected async onGoogleLoginRedirect(): Promise<void> {
+    if (this.isGoogleSubmitting() || this.isSubmitting()) {
+      return;
+    }
+
+    this.errorMessage.set(null);
+    this.isGoogleSubmitting.set(true);
+
+    try {
+      await this.firebaseAuth.signInWithGoogleRedirect();
+    } catch (error) {
+      this.errorMessage.set(mapFirebaseAuthErrorMessage(error));
       this.isGoogleSubmitting.set(false);
     }
   }

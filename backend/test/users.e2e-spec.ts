@@ -300,6 +300,77 @@ describe('Users & Auth (e2e)', () => {
     });
   });
 
+  describe('Isolamento e Controle de Acesso entre Usuários A e B', () => {
+    it('garante que usuário A e usuário B acessem estritamente seus próprios dados e impede personificação', async () => {
+      // 1. Usuário B (Carlos) cria seu perfil
+      const resB = await request(app.getHttpServer())
+        .put('/api/v1/users/me')
+        .set('Authorization', 'Bearer another-user-token')
+        .send({ firstName: 'Carlos', lastName: 'Santos', age18Confirmed: true })
+        .expect(200);
+
+      expect(resB.body.uid).toBe('user-another-789');
+      expect(resB.body.firstName).toBe('Carlos');
+
+      // 2. Consulta de Usuário A retorna estritamente os dados de A
+      const getA = await request(app.getHttpServer())
+        .get('/api/v1/users/me')
+        .set('Authorization', 'Bearer valid-verified-token')
+        .expect(200);
+
+      expect(getA.body.uid).toBe('user-verified-123');
+      expect(getA.body.firstName).toBe('Ana');
+
+      // 3. Consulta de Usuário B retorna estritamente os dados de B
+      const getB = await request(app.getHttpServer())
+        .get('/api/v1/users/me')
+        .set('Authorization', 'Bearer another-user-token')
+        .expect(200);
+
+      expect(getB.body.uid).toBe('user-another-789');
+      expect(getB.body.firstName).toBe('Carlos');
+
+      // 4. Usuário A tenta injetar o UID de B no corpo da requisição PUT -> deve ser rejeitado com 400
+      await request(app.getHttpServer())
+        .put('/api/v1/users/me')
+        .set('Authorization', 'Bearer valid-verified-token')
+        .send({
+          uid: 'user-another-789',
+          firstName: 'Ana',
+          lastName: 'Hacker',
+          age18Confirmed: true,
+        })
+        .expect(400);
+
+      // 5. Confirma que os dados de Usuário B permaneceram inalterados no Firestore
+      const verifyB = await request(app.getHttpServer())
+        .get('/api/v1/users/me')
+        .set('Authorization', 'Bearer another-user-token')
+        .expect(200);
+
+      expect(verifyB.body.firstName).toBe('Carlos');
+      expect(verifyB.body.lastName).toBe('Santos');
+
+      // 6. Usuário A tenta ler dados de B usando query string -> API retorna dados de A
+      const spoofA = await request(app.getHttpServer())
+        .get('/api/v1/users/me?uid=user-another-789')
+        .set('Authorization', 'Bearer valid-verified-token')
+        .expect(200);
+
+      expect(spoofA.body.uid).toBe('user-verified-123');
+      expect(spoofA.body.firstName).toBe('Ana');
+
+      // 7. Usuário B tenta ler dados de A usando query string -> API retorna dados de B
+      const spoofB = await request(app.getHttpServer())
+        .get('/api/v1/users/me?uid=user-verified-123')
+        .set('Authorization', 'Bearer another-user-token')
+        .expect(200);
+
+      expect(spoofB.body.uid).toBe('user-another-789');
+      expect(spoofB.body.firstName).toBe('Carlos');
+    });
+  });
+
   describe('Indisponibilidade do Firebase', () => {
     it('retorna 503 quando Firebase estiver desativado/indisponível para rotas privadas', async () => {
       mockIsAvailable = false;

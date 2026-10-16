@@ -1,20 +1,22 @@
 # Roadmap
 
-## Entregue — fundação e integração de identidade/perfil
+## Entregue — identidade, perfis e integração Cloud DEV
 
-- Fundação 8ae3b26: Angular standalone, Tailwind/Spartan, API Nest, ambientes, testes, CI e documentação.
-- Frontend d315bc7: landing, cadastro, login e-mail/senha/Google, recuperação de senha, confirmação, guards e painel básico.
-- Backend 08956d9: Admin SDK, guards de ID Token/e-mail, GET e PUT /api/v1/users/me, persistência em users/{uid}.
-- Checkpoint 2 integra os históricos e o contrato, adiciona modo local reproduzível, renovação explícita do token, distinção entre perfil ausente e API indisponível e automação entre Angular, Nest e emuladores oficiais. Registros de teste são isolados e removidos individualmente.
+- Fundação `8ae3b26`: Angular standalone, Tailwind/Spartan, Nest, ambientes, testes e CI.
+- Integração `2288209`: frontend `d315bc7` e backend `08956d9`, contrato de autenticação/perfil e automação com emuladores.
+- Checkpoint 4 integra frontend `7b4782a` (Minha Conta, Google popup/redirect e tratamento de erros) e backend `42f7a39` (ADC/Cloud e contratos HTTP).
+- Configuração real do app Web, Authentication E-mail/Senha e Google habilitados, Firestore Cloud DEV existente e regras restritivas consultados. Nenhum recurso de infraestrutura recriado ou deploy de regras.
+- Smoke Cloud real de API: cadastro, ID Tokens, PUT/GET autenticados, confirmação por código oficial, isolamento e Firestore direto negado; limpeza individual verificada.
+- Emuladores permanecem separados de Cloud e os builds padrão de produção não apontam permanentemente para DEV.
 
-A validação de emuladores não valida Firebase em nuvem. Google OAuth real, entrega de e-mails e IAM dependem de projeto Firebase real de desenvolvimento e configuração externa. CI GitHub continua bloqueada por cobrança; workflow preservado.
+## Próximo checkpoint recomendado
 
-## Próximo checkpoint — desenvolvimento em paralelo com contrato acordado
+Concluir a validação interativa de Google com uma conta autorizada e entrega/recuperação de e-mail em caixa postal real; revisar quotas e políticas de e-mail de desenvolvimento sem habilitar faturamento. Estabilizar essa experiência antes de novos domínios. Configuração e limitações em [Firebase Cloud DEV](firebase-cloud-dev.md).
 
-Preparar e validar o projeto Firebase real de desenvolvimento, domínios/provedores e credenciais externas, sem confundir com produção. Definir o contrato e os requisitos de consentimento/minimização para perfis e avaliação inicial antes de implementar novas funcionalidades. Os agentes podem abrir novas branches a partir da main integrada; respeitar propriedade de arquivos e integração única de manifests/lockfile conforme AGENTS.md.
+Depois, definir contratos de consentimento, minimização de dados e requisitos da avaliação inicial antes de autorizar implementação. Agentes futuros podem abrir branches a partir da main integrada, respeitando propriedade de arquivos, lockfile único e worktrees conforme AGENTS.md. CI GitHub continua bloqueada por cobrança; workflow preservado.
 
 ## Posterior — ainda não implementado
 
-Avaliação corporal/rotina/objetivos; IMC e fórmulas estimativas com referência no backend; Adaptação de 30 dias; catálogo alimentar e preparos; registros diários, exercícios, histórico de peso e gráficos; ajustes auditáveis e relatório PDF. Depois: Foco Total, controle glicêmico, exames e sono.
+Avaliação corporal/rotina/objetivos; IMC e fórmulas estimativas com referência no backend; Adaptação de 30 dias; catálogo alimentar e preparos; registros diários, exercícios, histórico de peso e gráficos; ajustes auditáveis e PDF. Depois: Foco Total, controle glicêmico, exames e sono.
 
-As rotas Avaliação e Adaptação atuais são apenas avisos, sem questionários ou cálculos. Roadmap não é autorização para implementar módulos adicionais.
+Avaliação e Adaptação atuais são apenas avisos. Roadmap não autoriza implementar esses módulos.
