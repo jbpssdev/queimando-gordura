@@ -39,6 +39,9 @@ describe.runIf(isEmulatorRunning)('Integração Real com Firebase Emulator Suite
     try {
       for (const uid of ownedUids) {
         const reference = firebase.getFirestore().collection('users').doc(uid);
+        const assessDoc = reference.collection('assessments').doc('initial');
+        await assessDoc.collection('results').doc('current').delete();
+        await assessDoc.delete();
         await reference.delete();
         await firebase.getAuth().deleteUser(uid);
         expect((await reference.get()).exists).toBe(false);
@@ -160,6 +163,142 @@ describe.runIf(isEmulatorRunning)('Integração Real com Firebase Emulator Suite
     await request(server)
       .get('/api/v1/users/' + first.localId)
       .set('Authorization', 'Bearer ' + secondToken)
+      .expect(404);
+  }, 30000);
+
+  it('persiste avaliação real, calcula métricas, isola subcoleções e bloqueia acesso cruzado no Firestore Emulator', async () => {
+    const server = app.getHttpServer();
+    const userA = await createIdentity();
+    const tokenA = await confirmAndRefresh(userA);
+
+    // GET /assessments/me antes de criar retorna 404
+    await request(server)
+      .get('/api/v1/assessments/me')
+      .set('Authorization', 'Bearer ' + tokenA)
+      .expect(404);
+
+    // Preenche seção body
+    const bodyRes = await request(server)
+      .patch('/api/v1/assessments/me')
+      .set('Authorization', 'Bearer ' + tokenA)
+      .send({
+        section: 'body',
+        data: {
+          dateOfBirth: '1990-05-15',
+          sexForMetabolicFormula: 'male',
+          heightCm: 180,
+          weightKg: 85,
+          targetWeightKg: 78,
+          scaleType: 'standard',
+        },
+      })
+      .expect(200);
+
+    expect(bodyRes.body.revision).toBe(1);
+    expect(bodyRes.body.status).toBe('draft');
+
+    // Preenche seção health
+    await request(server)
+      .patch('/api/v1/assessments/me')
+      .set('Authorization', 'Bearer ' + tokenA)
+      .send({
+        section: 'health',
+        data: {
+          conditions: [],
+          hasNoKnownConditions: true,
+          isConditionUnknown: false,
+          symptoms: ['none'],
+        },
+      })
+      .expect(200);
+
+    // Preenche seção routine
+    await request(server)
+      .patch('/api/v1/assessments/me')
+      .set('Authorization', 'Bearer ' + tokenA)
+      .send({
+        section: 'routine',
+        data: {
+          workPattern: 'sedentary',
+          sittingHoursPerDay: 8,
+          dailyMovementLevel: 'low',
+          strengthTraining: {
+            frequencyDaysPerWeek: 3,
+            durationMinutes: 45,
+            intensity: 'moderate',
+          },
+          cardioTraining: {
+            frequencyDaysPerWeek: 2,
+            durationMinutes: 30,
+            intensity: 'light',
+          },
+        },
+      })
+      .expect(200);
+
+    // Preenche seção nutrition
+    await request(server)
+      .patch('/api/v1/assessments/me')
+      .set('Authorization', 'Bearer ' + tokenA)
+      .send({
+        section: 'nutrition',
+        data: {
+          mealsPerDay: 3,
+          mealRegularity: 'regular',
+          hasKitchenScale: true,
+          sweetenedDrinksFrequency: 'never',
+          alcoholFrequency: 'never',
+          budgetConstrained: false,
+          dietaryPreferences: ['omnivore'],
+          allergies: [],
+          intolerances: [],
+          dietaryRestrictions: [],
+          mealSources: ['home_cooked'],
+          weightLossChallenges: [],
+        },
+      })
+      .expect(200);
+
+    // Avalia e consolida resultados
+    const evalRes = await request(server)
+      .post('/api/v1/assessments/me/evaluate')
+      .set('Authorization', 'Bearer ' + tokenA)
+      .expect(201);
+
+    expect(evalRes.body.revision).toBe(4);
+    expect(evalRes.body.bmi.value).toBe(26.2);
+    expect(evalRes.body.bmr.calculated).toBe(true);
+    expect(evalRes.body.safety.status).toBe('cleared');
+
+    // Verifica persistência real no Firestore Emulator
+    const assessDocRef = firebase
+      .getFirestore()
+      .collection('users')
+      .doc(userA.localId)
+      .collection('assessments')
+      .doc('initial');
+
+    const snap = await assessDocRef.get();
+    expect(snap.exists).toBe(true);
+    expect(snap.data()?.['status']).toBe('completed');
+    expect(snap.data()?.['revision']).toBe(4);
+
+    const resultSnap = await assessDocRef.collection('results').doc('current').get();
+    expect(resultSnap.exists).toBe(true);
+    expect(resultSnap.data()?.['bmi']?.['value']).toBe(26.2);
+
+    // Usuário B não acessa a avaliação do Usuário A
+    const userB = await createIdentity();
+    const tokenB = await confirmAndRefresh(userB);
+
+    await request(server)
+      .get('/api/v1/assessments/me')
+      .set('Authorization', 'Bearer ' + tokenB)
+      .expect(404);
+
+    await request(server)
+      .get('/api/v1/assessments/me/results')
+      .set('Authorization', 'Bearer ' + tokenB)
       .expect(404);
   }, 30000);
 });

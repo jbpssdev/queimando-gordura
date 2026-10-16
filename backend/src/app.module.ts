@@ -5,6 +5,7 @@ import { HealthModule } from './modules/health/health.module.js';
 import { FirebaseModule } from './modules/firebase/firebase.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
+import { AssessmentModule } from './modules/assessment/assessment.module.js';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { UsersModule } from './modules/users/users.module.js';
     FirebaseModule,
     AuthModule,
     UsersModule,
+    AssessmentModule,
     HealthModule,
   ],
 })
