@@ -39,6 +39,11 @@ frontend/src/app/
 │   │   ├── assessment-api.service.ts # Consumo de /api/v1/assessments/me
 │   │   ├── assessment-state.service.ts # Gestor reativo de etapas e rascunho (Signals)
 │   │   └── assessment-helpers.ts   # Cálculo de idade, decimais pt-BR e pendências inteligentes
+│   ├── adaptation/                 # Módulo do Programa Adaptação (30 dias)
+│   │   ├── adaptation.model.ts     # Interfaces de prévia, modalidades, plano e marcos
+│   │   ├── adaptation-api.service.ts # Integração com /api/v1/adaptation/me
+│   │   ├── adaptation-state.service.ts # Estado reativo da jornada e modalidades (Signals)
+│   │   └── adaptation-helpers.ts   # Detecção IANA, formatação pt-BR e geração da timeline
 │   └── auth/
 │       ├── auth-error.util.ts      # Mapeamento amigável de erros do Firebase e da API
 │       ├── auth-session.service.ts # Gerenciador de sessão reativo (Signals do Angular)
@@ -71,7 +76,11 @@ frontend/src/app/
 │   │   │       ├── step-health.ts
 │   │   │       ├── step-routine.ts
 │   │   │       └── step-nutrition.ts
-│   │   └── adaptation/
+│   │   └── adaptation/             # Área do Programa Adaptação (/adaptacao)
+│   │       ├── adaptation.ts       # Container dinâmico (carregamento/erro/prévia/jornada)
+│   │       └── components/
+│   │           ├── adaptation-preview.ts # Seleção de modalidade e confirmação de início
+│   │           └── adaptation-journey.ts # Painel de progresso dos 30 dias e calendário temporal
 │   ├── account/                    # Visualização de perfil real (/minha-conta)
 │   │   ├── my-account.ts
 │   │   └── my-account.spec.ts
@@ -315,16 +324,71 @@ O frontend se integra com o backend através do prefixo `/api/v1`:
   - `200`: `AssessmentResultsResponse` com a última avaliação vigente calculada.
   - `404`: Nenhuma avaliação calculada disponível.
 
+### `GET /api/v1/adaptation/me/preview`
+
+- **Cabeçalho:** `Authorization: Bearer <Firebase ID Token>`
+- **Respostas:**
+  - `200`: `AdaptationPreviewResponse` contendo elegibilidade da avaliação (`hasAssessment`, `assessmentCompleted`), recomendação (`recommendedMode`) e status de cada modalidade (`standard` e `intensified`). Para modalidades bloqueadas, inclui `restrictionReason` retornado pela API (e.g. obesidade grau III ou histórico clínico).
+  - `401`: Token ausente ou inválido.
+
+### `GET /api/v1/adaptation/me`
+
+- **Cabeçalho:** `Authorization: Bearer <Firebase ID Token>`
+- **Respostas:**
+  - `200`: `AdaptationPlanResponse` contendo dados da jornada em andamento ou concluída: modalidade, fuso horário IANA, data de início/fim, dia atual (1 a 30), marcos e meta calórica oficial.
+  - `404`: Usuário ainda não iniciou o Programa Adaptação (orienta redirecionamento para seleção de modalidade).
+
+### `POST /api/v1/adaptation/me/start`
+
+- **Cabeçalho:** `Authorization: Bearer <Firebase ID Token>`
+- **Corpo:**
+  ```json
+  {
+    "mode": "standard",
+    "timeZone": "America/Sao_Paulo"
+  }
+  ```
+- **Respostas:**
+  - `201`: `AdaptationPlanResponse` com a criação oficial do plano de 30 dias consecutivos.
+  - `400`: Modalidade indisponível para os critérios clínicos do usuário ou requisição inválida.
+  - `409`: Plano já iniciado anteriormente (impede múltiplos inícios concorrentes).
+
 ---
 
-## 6. Limitações Atuais e Próximos Passos
+## 6. Módulo do Programa Adaptação (30 Dias)
+
+A página `/adaptacao` gerencia a jornada inicial de 30 dias consecutivos:
+
+1. **Prévia e Elegibilidade:**
+   - Antes de iniciar, consulta `GET /api/v1/adaptation/me/preview`.
+   - Se a Avaliação Inicial não foi realizada ou concluída, orienta o usuário a preencher `/avaliacao`.
+   - Exibe os cartões das modalidades **Padrão** (sustentável e gradual) e **Intensificada** (sujeita a critérios clínicos adicionais).
+   - O botão de seleção é bloqueado para modalidades com `available: false`, exibindo o motivo real de restrição vindo do backend (e.g. Obesidade Grau III ou contraindicações clínicas).
+2. **Início Explícito e Fuso Horário:**
+   - O plano nunca se inicia automaticamente ao visitar a página.
+   - Exige clique em "Iniciar meus 30 dias" e confirmação explícita em modal/diálogo explicativo.
+   - O diálogo esclarece que os 30 dias são corridos, não pausam por ausência e ausência de dados não significa jejum ou inatividade.
+   - Envia o fuso horário IANA detectado no navegador (`Intl.DateTimeFormat().resolvedOptions().timeZone`).
+   - Proteção contra cliques múltiplos e requisições concorrentes.
+3. **Jornada Visual e Calendário Temporal:**
+   - Consulta `GET /api/v1/adaptation/me` após o início.
+   - Apresenta: dia atual (ex: "Dia 1 de 30"), datas de início e término formatadas em pt-BR, e barra de progresso temporal.
+   - Calendário visual dos 30 dias destacando dias passados, dia de "Hoje" e dias futuros, com marcadores nos dias de marco (Dia 7, 14, 21 e 30).
+   - Mensagens orientativas e discretas de acordo com a fase da adaptação.
+   - **Compromisso Ético e Clínico:** O transcurso dos dias reflete apenas a linha do tempo do calendário; **não há checkmarks de "dias concluídos com sucesso", pontuações artificiais de gamificação ou premiações por restrição alimentar**.
+4. **Metas Calóricas:**
+   - Exibe a meta calórica diária fornecida pela API quando disponível. Caso indisponível, apresenta mensagem informativa sem realizar cálculos locais de déficit ou gasto calórico no frontend.
+
+---
+
+## 7. Limitações Atuais e Próximos Passos
 
 - **Cálculos corporais e metabólicos:** Fórmulas de IMC, taxas metabólicas basais (Harris-Benedict/Mifflin) e estimativas de gasto energético diário pertencem exclusivamente ao backend NestJS (`/api/v1/assessments/me/evaluate`). O frontend não realiza cálculos matemáticos paralelos que substituam a API oficial.
-- **Programa Adaptação:** Apresenta estrutura conceitual e modalidades Padrão e Intensificada; a criação de planos personalizados e o contador de 30 dias serão liberados no próximo checkpoint de desenvolvimento.
+- **Registro diário de refeições e pesagens:** A jornada de adaptação exibe o acompanhamento temporal de 30 dias (Checkpoint 6A). O registro interativo de refeições, ingestão calórica diária e acompanhamento de peso serão implementados no Checkpoint 7.
 
 ---
 
-## 7. Como Executar e Validar
+## 8. Como Executar e Validar
 
 A partir da raiz do monorepo:
 
