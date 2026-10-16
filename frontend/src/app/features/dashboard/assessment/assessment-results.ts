@@ -4,6 +4,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { AssessmentStateService } from '../../../core/assessment/assessment-state.service';
+import { AdaptationStateService } from '../../../core/adaptation/adaptation-state.service';
 import { AuthSessionService } from '../../../core/auth/auth-session.service';
 import { AssessmentPending } from './components/assessment-pending';
 import { formatBrazilianNumber } from '../../../core/assessment/assessment-helpers';
@@ -366,9 +367,9 @@ import { formatBrazilianNumber } from '../../../core/assessment/assessment-helpe
                 Adaptação — sua jornada de 30 dias
               </h2>
               <p class="text-sm text-muted-foreground mt-2 leading-relaxed">
-                Com sua avaliação registrada, o próximo módulo do produto será o
-                <strong>Programa Adaptação</strong>, estruturado para consolidar hábitos e organizar
-                sua alimentação em 30 dias.
+                Com sua avaliação registrada, consulte a disponibilidade do
+                <strong>Programa Adaptação</strong>, com calendário organizacional de 30 dias e
+                avisos definidos pela API.
               </p>
             </div>
 
@@ -391,32 +392,37 @@ import { formatBrazilianNumber } from '../../../core/assessment/assessment-helpe
                   <span class="text-[11px] text-muted-foreground font-medium">30 dias</span>
                 </div>
                 <p class="text-xs text-muted-foreground leading-relaxed">
-                  Planejamento mais direto para pessoas com rotina mais estruturada e que já possuem
-                  familiaridade com monitoramento de hábitos.
+                  Indisponível nesta versão; requer política clínica validada. A API informa as
+                  restrições de cada modalidade.
                 </p>
               </div>
             </div>
 
-            <!-- Aviso Honesto e Transparente sobre Próximo Checkpoint -->
+            <!-- Aviso e Orientação da Adaptação -->
             <div
               class="rounded-lg border border-border bg-background/80 p-4 text-xs text-muted-foreground space-y-1.5"
             >
-              <p class="font-semibold text-foreground">ℹ️ Estado do desenvolvimento do produto:</p>
+              <p class="font-semibold text-foreground">ℹ️ Próxima etapa disponível:</p>
               <p>
-                A criação detalhada e a ativação do plano de 30 dias serão implementadas no próximo
-                checkpoint. Seus dados e cálculos estão salvos com segurança para quando a jornada
-                começar.
+                Consulte as modalidades e restrições antes de solicitar o início. Somente
+                modalidades disponíveis na API podem ser iniciadas. Registros detalhados de
+                refeições diárias serão adicionados no próximo módulo.
               </p>
             </div>
 
             <!-- Ações -->
             <div class="flex flex-col sm:flex-row gap-3 pt-2">
-              <a routerLink="/painel" hlmBtn variant="default" class="font-semibold">
-                Voltar ao Painel
-              </a>
-              <a routerLink="/avaliacao" hlmBtn variant="outline">
-                Revisar Respostas da Avaliação
-              </a>
+              @if (adaptationState.hasActivePlan()) {
+                <a routerLink="/adaptacao" hlmBtn variant="default" class="font-semibold">
+                  Acessar Minha Jornada (Dia {{ adaptationState.plan()?.currentDay }}/30) →
+                </a>
+              } @else {
+                <a routerLink="/adaptacao" hlmBtn variant="default" class="font-semibold">
+                  Iniciar Programa Adaptação (30 Dias) →
+                </a>
+              }
+              <a routerLink="/painel" hlmBtn variant="outline"> Voltar ao Painel </a>
+              <a routerLink="/avaliacao" hlmBtn variant="ghost"> Revisar Respostas </a>
             </div>
           </div>
         }
@@ -427,6 +433,7 @@ import { formatBrazilianNumber } from '../../../core/assessment/assessment-helpe
 export class AssessmentResults implements OnInit {
   protected readonly session = inject(AuthSessionService);
   protected readonly state = inject(AssessmentStateService);
+  protected readonly adaptationState = inject(AdaptationStateService);
 
   public readonly results = this.state.results;
   public readonly isLoading = this.state.isEvaluating;
@@ -434,6 +441,11 @@ export class AssessmentResults implements OnInit {
 
   public ngOnInit(): void {
     this.loadResults();
+    this.adaptationState.loadState().subscribe({
+      error: () => {
+        // Silencioso em caso de erro no preview
+      },
+    });
   }
 
   public loadResults(): void {

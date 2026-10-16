@@ -1,5 +1,7 @@
 import { of } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { AssessmentResults } from './assessment-results';
 import { AssessmentStateService } from '../../../core/assessment/assessment-state.service';
@@ -53,7 +55,12 @@ describe('AssessmentResults Component', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AssessmentResults],
-      providers: [provideRouter([]), { provide: AuthSessionService, useValue: mockSession }],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthSessionService, useValue: mockSession },
+      ],
     }).compileComponents();
 
     stateService = TestBed.inject(AssessmentStateService);
@@ -89,13 +96,11 @@ describe('AssessmentResults Component', () => {
     expect(compiled.textContent).toContain('Sua saúde merece atenção individualizada');
   });
 
-  it('apresenta a introdução da Adaptação de 30 dias com aviso honesto de desenvolvimento', () => {
+  it('apresenta a introdução da Adaptação de 30 dias com botão de acesso ao plano', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Adaptação — sua jornada de 30 dias');
     expect(compiled.textContent).toContain('Modalidade Padrão');
     expect(compiled.textContent).toContain('Modalidade Intensificada');
-    expect(compiled.textContent).toContain(
-      'A criação detalhada e a ativação do plano de 30 dias serão implementadas no próximo checkpoint',
-    );
+    expect(compiled.textContent).toContain('Iniciar Programa Adaptação (30 Dias)');
   });
 });

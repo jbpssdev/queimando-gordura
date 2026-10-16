@@ -35,6 +35,19 @@ test('falha parcial avaliação: API realmente desativada responde 503 nos quatr
   }
 });
 
+test('falha parcial adaptação: API desativada retorna 503 nos três endpoints', async ({
+  request,
+}) => {
+  test.skip(!disabled);
+  for (const [method, path] of [
+    ['get', ''],
+    ['get', '/preview'],
+    ['post', '/start'],
+  ] as const) {
+    expect((await request[method]('/api/v1/adaptation/me' + path)).status()).toBe(503);
+  }
+});
+
 function temporaryEmail(): string {
   const email = `qg-browser-${randomUUID()}@example.test`;
   emails.push(email);

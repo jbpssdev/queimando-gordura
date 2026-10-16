@@ -19,7 +19,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'npm run start:prod --workspace backend',
+      command: 'node scripts/integration/serve-emulator-api.mjs',
       url: 'http://127.0.0.1:3105/api/v1/health',
       reuseExistingServer: false,
       timeout: 30000,

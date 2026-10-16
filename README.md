@@ -81,7 +81,7 @@ A entrega de e-mails em caixa postal real e o login Google com conta pessoal exi
 
 ## Organização e continuidade
 
-`frontend/src/app/core` concentra sessão/HTTP; `features` organiza telas; `shared/ui` contém Spartan oficial. `backend/src/modules` contém firebase/auth/users/health, `config` valida ambiente e `common` padroniza erros. TypeScript separado por aplicação, npm workspaces e um único lockfile. Worktrees e branches foram preservados.
+`frontend/src/app/core` concentra sessão/HTTP; `features` organiza telas; `shared/ui` contém Spartan oficial. `backend/src/modules` contém firebase/auth/users/health/assessment/adaptation, `config` valida ambiente e `common` padroniza erros. TypeScript separado por aplicação, npm workspaces e um único lockfile. Worktrees e branches foram preservados.
 
 [Arquitetura](docs/architecture.md) · [Segurança](docs/security.md) · [Produto](docs/product.md) · [Roadmap](docs/roadmap.md) · [Orientações para agentes](AGENTS.md).
 
@@ -98,3 +98,19 @@ Cinco etapas: Corpo, Saúde, Rotina, Alimentação e Revisão. Seções são sal
 Contratos: GET/PATCH /api/v1/assessments/me, POST /api/v1/assessments/me/evaluate e GET /api/v1/assessments/me/results. Consulte [Avaliação Inicial: campos, fórmulas, limites, persistência e testes](docs/assessment.md). A jornada deste checkpoint foi testada somente com dados temporários em emuladores, sem alterar registros Cloud preexistentes. As configurações Firebase DEV e produção foram preservadas.
 
 Validação final do checkpoint 5C: `npm run validate` aprovado, com **252 testes** — 104 Angular, 97 Nest, 2 travas Cloud (unitárias), 36 HTTP, 3 integrações reais backend/emuladores, 7 fluxos de navegador/emuladores, 2 smoke responsivos e 1 teste de regras. Formatação, lint, typecheck, builds e workspaces aprovados; lockfile sem alteração de dependências. A jornada da avaliação foi verificada em 320/390/768/1440 px, com contraste do botão principal, rascunho restaurado, cálculos da API, recálculo, revisão anterior preservada e isolamento. A consulta Cloud opcional não foi executada neste checkpoint. Dados temporários e emuladores foram removidos/encerrados; a sessão Cloud DEV anterior foi preservada.
+
+## Adaptação de 30 dias — checkpoint 6C
+
+Frontend `cc505ee` e backend `fbbdc94` integrados sobre `6848206`. Acesse `/adaptacao` pelo painel após autenticar, confirmar e-mail, completar perfil e concluir a Avaliação Inicial. Consulte modalidades e avisos da API, escolha Padrão e confirme manualmente o início. O plano único persiste em `users/{uid}/adaptations/initial`, reaparece após reload e não reinicia em solicitações repetidas.
+
+Calendário de 30 dias civis no fuso IANA fixado no início; marcos nos dias 7/14/21/30. Dia e progresso vêm do backend. Começa em 0%, atinge 96,7% no Dia 30 e 100% após encerrá-lo. Datas passadas representam apenas tempo, sem presumir adesão ou marcar atividades concluídas.
+
+Endpoints: GET `/api/v1/adaptation/me/preview`, GET `/api/v1/adaptation/me` e POST `/api/v1/adaptation/me/start` com `{mode,timeZone}`. Token validado, e-mail confirmado e propriedade por UID. Início transacional verifica a revisão da avaliação; revisão alterada exige recálculo.
+
+Padrão pode estar disponível para IMC >= 40 isolado, com orientação multidisciplinar; condições adicionais, saúde desconhecida, medicamentos, gestação/lactação e sintomas urgentes impedem início e orientam atendimento apropriado. Intensificada permanece indisponível. Nenhum questionário constitui liberação clínica e não há meta calórica numérica: API retorna null. TMB usa Mifflin-St Jeor; o intervalo heurístico do GET não é precisão clínica comprovada.
+
+Execução: `npm run dev:emulator` (4200/3100, Auth9099/Firestore8080), ou `npm run dev:cloud` com configuração DEV/ADC já existente. Preserve processos que já ocupem essas portas. `npm run validate` executa verificações locais e integrações em portas isoladas4201/3105; smoke4203/3105. A suíte usa relógio substituído somente no servidor de teste demo local, sem alterar documentos para simular tempo. Esta Adaptação foi testada com emuladores; não foi validada com escrita no Cloud nesta integração. Configurações Cloud DEV/produção foram preservadas.
+
+Checkpoint 7 permanece previsto: especificar registros diários, alimentos/preparos, pesagens e histórico, com privacidade e revisão clínica necessárias. Não há diário alimentar, check-in, metas, prescrição, relatórios ou planos Intensificados neste checkpoint. [Contrato, modalidades, persistência, limites e testes](docs/adaptation.md).
+
+Validação do checkpoint 6C: **353 testes distintos aprovados** — 139 Angular, 141 Nest, 2 travas Cloud unitárias, 54 HTTP, 4 integrações backend/emuladores, 10 fluxos de navegador/emuladores, 2 smoke responsivos e 1 teste de regras. Casos Cloud opcionais não foram executados; as integrações com emuladores ignoradas na suíte HTTP foram executadas separadamente contra serviços reais locais. Formatação, lint, typecheck, builds, workspaces e lockfile verificados.

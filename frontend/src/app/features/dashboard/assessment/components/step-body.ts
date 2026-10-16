@@ -79,9 +79,9 @@ import type {
               Informação biológica para fórmula metabólica
             </span>
             <p class="text-xs text-muted-foreground leading-relaxed">
-              Equações científicas consolidadas (Harris-Benedict / Mifflin-St Jeor) utilizam o sexo
-              biológico atribuído ao nascer para estimar a taxa metabólica basal. Você tem a opção
-              de não informar; nesse caso, cálculos metabólicos específicos não serão gerados.
+              A equação Mifflin-St Jeor utilizada pelo sistema considera o sexo biológico atribuído
+              ao nascer para estimar a taxa metabólica basal. Você tem a opção de não informar;
+              nesse caso, cálculos metabólicos específicos não serão gerados.
             </p>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">

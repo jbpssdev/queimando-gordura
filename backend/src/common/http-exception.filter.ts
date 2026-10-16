@@ -46,9 +46,27 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? (body as { pendingItems: unknown }).pendingItems
         : undefined;
 
+    const code =
+      body &&
+      typeof body === 'object' &&
+      'code' in body &&
+      typeof (body as { code: unknown }).code === 'string'
+        ? (body as { code: string }).code
+        : undefined;
+
+    const reasons =
+      body &&
+      typeof body === 'object' &&
+      'reasons' in body &&
+      Array.isArray((body as { reasons: unknown }).reasons)
+        ? (body as { reasons: unknown[] }).reasons
+        : undefined;
+
     response.status(statusCode).json({
       statusCode,
       message,
+      ...(code !== undefined ? { code } : {}),
+      ...(reasons !== undefined ? { reasons } : {}),
       ...(pendingItems !== undefined ? { pendingItems } : {}),
       path: request.originalUrl.split('?')[0] ?? request.path,
       timestamp: new Date().toISOString(),

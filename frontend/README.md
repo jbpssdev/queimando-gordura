@@ -39,6 +39,11 @@ frontend/src/app/
 │   │   ├── assessment-api.service.ts # Consumo de /api/v1/assessments/me
 │   │   ├── assessment-state.service.ts # Gestor reativo de etapas e rascunho (Signals)
 │   │   └── assessment-helpers.ts   # Cálculo de idade, decimais pt-BR e pendências inteligentes
+│   ├── adaptation/                 # Módulo do Programa Adaptação (30 dias)
+│   │   ├── adaptation.model.ts     # Interfaces de prévia, modalidades, plano e marcos
+│   │   ├── adaptation-api.service.ts # Integração com /api/v1/adaptation/me
+│   │   ├── adaptation-state.service.ts # Estado reativo da jornada e modalidades (Signals)
+│   │   └── adaptation-helpers.ts   # Detecção IANA, formatação pt-BR e geração da timeline
 │   └── auth/
 │       ├── auth-error.util.ts      # Mapeamento amigável de erros do Firebase e da API
 │       ├── auth-session.service.ts # Gerenciador de sessão reativo (Signals do Angular)
@@ -71,7 +76,11 @@ frontend/src/app/
 │   │   │       ├── step-health.ts
 │   │   │       ├── step-routine.ts
 │   │   │       └── step-nutrition.ts
-│   │   └── adaptation/
+│   │   └── adaptation/             # Área do Programa Adaptação (/adaptacao)
+│   │       ├── adaptation.ts       # Container dinâmico (carregamento/erro/prévia/jornada)
+│   │       └── components/
+│   │           ├── adaptation-preview.ts # Seleção de modalidade e confirmação de início
+│   │           └── adaptation-journey.ts # Painel de progresso dos 30 dias e calendário temporal
 │   ├── account/                    # Visualização de perfil real (/minha-conta)
 │   │   ├── my-account.ts
 │   │   └── my-account.spec.ts
@@ -151,7 +160,7 @@ Implementação completa do fluxo de avaliação guiado em 5 etapas no Angular 2
 
 1. **Informações Corporais (`body`):**
    - Data de nascimento com validação real de idade mínima de 18 anos (`calculateAge()`).
-   - Opção informada ou neutra para sexo biológico, com explicação respeitosa de sua aplicação na fórmula metabólica (Harris-Benedict / Mifflin).
+   - Opção informada ou neutra para sexo biológico, com explicação respeitosa de sua aplicação na fórmula metabólica (Mifflin-St Jeor).
    - Altura (cm) e peso atual (kg), com suporte a decimais no formato brasileiro (`82,5`).
    - Tipo de balança: comum ou bioimpedância (com campos condicionais opcionais: % gordura, massa muscular em kg, água % e gordura visceral).
    - Medidas opcionais complementares e peso desejado informado pelo usuário (sem imposição clínica de peso ideal).
@@ -315,16 +324,15 @@ O frontend se integra com o backend através do prefixo `/api/v1`:
   - `200`: `AssessmentResultsResponse` com a última avaliação vigente calculada.
   - `404`: Nenhuma avaliação calculada disponível.
 
----
+## Adaptação integrada — checkpoint 6C
 
-## 6. Limitações Atuais e Próximos Passos
+`/adaptacao` consulta os três endpoints canônicos (`GET /api/v1/adaptation/me/preview`, `GET /api/v1/adaptation/me`, `POST /api/v1/adaptation/me/start`). O adaptador traduz o JSON do backend para modelos de apresentação: `calendar/localDate/temporalState` em calendário visual, `active` em `in_progress` e avisos/motivos em mensagens. A elegibilidade, datas, progresso e ausência de meta calórica são autoritativos no backend.
 
-- **Cálculos corporais e metabólicos:** Fórmulas de IMC, taxas metabólicas basais (Harris-Benedict/Mifflin) e estimativas de gasto energético diário pertencem exclusivamente ao backend NestJS (`/api/v1/assessments/me/evaluate`). O frontend não realiza cálculos matemáticos paralelos que substituam a API oficial.
-- **Programa Adaptação:** Apresenta estrutura conceitual e modalidades Padrão e Intensificada; a criação de planos personalizados e o contador de 30 dias serão liberados no próximo checkpoint de desenvolvimento.
+Início manual e confirmado, plano único com repetição idempotente200, criação201, erro409 para revisão alterada ou parâmetros incompatíveis e422 para modalidade bloqueada/avaliação incompleta. Exibe os 30 dias, marcos7/14/21/30, dia atual, datas e progresso sem marcar atividades concluídas. Intensificada indisponível. Meta calórica null. IMC >=40 isolado pode acessar Padrão organizacional com orientação profissional; não é liberação médica.
 
----
+Veja [contrato completo, segurança e execução](../docs/adaptation.md). Próximos registros diários e pesagens pertencem ao Checkpoint7, não implementado.
 
-## 7. Como Executar e Validar
+## 8. Como Executar e Validar
 
 A partir da raiz do monorepo:
 

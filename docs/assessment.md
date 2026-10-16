@@ -1,6 +1,6 @@
 # Avaliação Inicial — checkpoint 5C
 
-Integra frontend `3ac502a` e backend `23493d6` sobre `9d4d998`. Avaliação em `/avaliacao`, resultados em `/avaliacao/resultados`. Calendário, planos e ativação da Adaptação não foram implementados.
+Integra frontend `3ac502a` e backend `23493d6` sobre `9d4d998`. Avaliação em `/avaliacao`, resultados em `/avaliacao/resultados`. O calendário organizacional da Adaptação foi integrado posteriormente no [checkpoint 6C](adaptation.md), sem planos prescritivos.
 
 ## Etapas e dados
 
@@ -68,6 +68,6 @@ Admin permanece somente no backend; Firestore direto continua bloqueado. Logs da
 
 Para visualizar, use `npm run dev:cloud` com sua própria autorização ADC existente, ou `npm run dev:emulator` em sessão separada com portas livres. O ambiente Firebase DEV/produção não foi alterado. A CI GitHub continua bloqueada por cobrança externa.
 
-Checkpoint 6: especificar contratos, consentimentos e salvaguardas do acompanhamento/Adaptação antes de implementar calendário ou recomendações. Revisão clínica dos fatores heurísticos e validação humana de e-mail/Google continuam necessárias; este checkpoint não certifica algoritmos clínicos.
+Checkpoint 6C integrou calendário e elegibilidade organizacional. Checkpoint 7 deverá especificar acompanhamento detalhado, consentimentos e salvaguardas antes de recomendações. Revisão clínica dos fatores heurísticos e validação humana de e-mail/Google continuam necessárias; este checkpoint não certifica algoritmos clínicos.
 
 Validação executada: 252 testes aprovados pelo comando completo npm run validate. Os resultados incluem 3 cenários backend contra emuladores e a jornada real de avaliação no navegador. Pendências opcionais na tela de resultados vêm de pendingItems calculado pelo backend com todas as seções; informações já respondidas não são inferidas como ausentes pelo cliente. CI remota bloqueada por cobrança, não usada como evidência de aprovação.

@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { AuthSessionService } from '../../../core/auth/auth-session.service';
+import { AdaptationStateService } from '../../../core/adaptation/adaptation-state.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -152,25 +153,56 @@ import { AuthSessionService } from '../../../core/auth/auth-session.service';
             <div>
               <div class="flex items-center justify-between pb-3 border-b border-border">
                 <h2 class="text-base font-semibold text-foreground">Programa Adaptação</h2>
-                <span
-                  class="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
-                >
-                  30 Dias
-                </span>
+                @if (adaptationState.hasActivePlan()) {
+                  <span
+                    class="rounded-md bg-primary/10 border border-primary/20 px-2 py-0.5 text-xs font-semibold text-primary"
+                  >
+                    @if (adaptationState.isPlanCompleted()) {
+                      Concluído
+                    } @else {
+                      Dia {{ adaptationState.plan()?.currentDay }} de 30
+                    }
+                  </span>
+                } @else {
+                  <span
+                    class="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+                  >
+                    30 Dias
+                  </span>
+                }
               </div>
               <p class="mt-4 text-sm leading-relaxed text-muted-foreground">
-                O programa estruturado de organização alimentar, movimentação e acompanhamento
-                semanal será ativado após sua avaliação inicial.
+                @if (adaptationState.hasActivePlan()) {
+                  @if (adaptationState.isPlanCompleted()) {
+                    O período de 30 dias foi encerrado. Isso não comprova adesão a hábitos ou
+                    resultado clínico.
+                  } @else {
+                    Sua jornada de 30 dias está ativa na Modalidade
+                    {{ adaptationState.plan()?.mode === 'standard' ? 'Padrão' : 'Intensificada' }}.
+                    Mantenha a constância em um dia de cada vez.
+                  }
+                } @else {
+                  Calendário organizacional de 30 dias. Consulte a disponibilidade e os avisos da
+                  API; não há prescrição ou meta calórica automática.
+                }
               </p>
             </div>
             <div class="mt-6 pt-4 border-t border-border">
               <a
                 routerLink="/adaptacao"
                 hlmBtn
-                variant="outline"
-                class="w-full text-xs font-medium"
+                variant="default"
+                class="w-full text-xs font-semibold"
               >
-                Visualizar Estrutura
+                @if (adaptationState.hasActivePlan()) {
+                  @if (adaptationState.isPlanCompleted()) {
+                    Ver Conclusão da Jornada →
+                  } @else {
+                    Acessar Minha Jornada (Dia {{ adaptationState.plan()?.currentDay }}/30) →
+                  }
+                } @else {
+                  Conhecer e Iniciar Adaptação →
+                }
               </a>
             </div>
           </div>
@@ -239,9 +271,18 @@ import { AuthSessionService } from '../../../core/auth/auth-session.service';
     </div>
   `,
 })
-export class Dashboard {
+export class Dashboard implements OnInit {
   protected readonly session = inject(AuthSessionService);
+  protected readonly adaptationState = inject(AdaptationStateService);
   private readonly router = inject(Router);
+
+  public ngOnInit(): void {
+    this.adaptationState.loadState().subscribe({
+      error: () => {
+        // Silencioso em caso de erro ao carregar status da adaptação no painel
+      },
+    });
+  }
 
   protected async onSignOut(): Promise<void> {
     await this.session.signOut();

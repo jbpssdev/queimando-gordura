@@ -1,6 +1,6 @@
 # Produto — Queimando Gordura 1.0
 
-Autenticação, perfil básico e Avaliação Inicial estão implementados e integrados até o checkpoint 5C. Acompanhamento e módulos de emagrecimento permanecem planejados.
+Autenticação, perfil básico e Avaliação Inicial e calendário organizacional da Adaptação estão integrados até o checkpoint 6C. Registros diários e recomendações de emagrecimento permanecem planejados.
 
 Público inicial: adultos de 18 anos ou mais que desejam emagrecer. Identidade clara, moderna, limpa, quase minimalista, com cores alegres equilibradas e foco em dados/resultados; sem aparência de academia, excesso de sombras, gradientes ou cartões decorativos.
 

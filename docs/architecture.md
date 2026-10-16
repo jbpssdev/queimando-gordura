@@ -2,7 +2,7 @@
 
 ## Decisão principal
 
-Aplicação Angular standalone, mobile-first, com Router, lazy loading e Signals para estado local. API REST NestJS por módulos de domínio. npm workspaces, sem Nx/Turborepo, banco relacional ou ferramentas de orquestração. Autenticação Firebase, perfis individuais, landing e painel básico integrados no checkpoint 2. Avaliação Inicial foi integrada no checkpoint 5C; calendário/plano Adaptação permanece futuro.
+Aplicação Angular standalone, mobile-first, com Router, lazy loading e Signals para estado local. API REST NestJS por módulos de domínio. npm workspaces, sem Nx/Turborepo, banco relacional ou ferramentas de orquestração. Autenticação Firebase, perfis individuais, landing e painel básico integrados no checkpoint 2. Avaliação Inicial foi integrada no checkpoint 5C; Adaptação organizacional de 30 dias foi integrada no checkpoint 6C, sem prescrição ou metas calóricas.
 
 ## Autenticação e acesso a dados
 
@@ -73,3 +73,7 @@ A API mantém os mesmos contratos e a mesma autorização por token; Minha Conta
 ## Avaliação Inicial — checkpoint 5C
 
 O módulo assessment valida seções, calcula métricas e aplica sinalizações de segurança no backend. O frontend traduz DTOs de apresentação para o contrato de transporte, sem implementar fórmulas metabólicas. Persistência transacional incrementa revisão, remove opcionais quando solicitado e impede conclusão de revisão alterada durante cálculo. Snapshots históricos permanecem íntegros. Veja [contrato e limites](assessment.md). Estado de saúde fica apenas em memória de tela e no Firestore via API; troca de identidade cancela requisições e limpa esse estado. Testes isolam serviços em 4201/3105 e preservam a sessão Cloud de desenvolvimento em 4200/3100.
+
+## Adaptação — checkpoint 6C
+
+AdaptationModule usa a avaliação e resultados oficiais, decide elegibilidade e cria documento único por UID via transação, conferindo a revisão corrente. ClockService e utilitários civis calculam calendário e progresso no fuso persistido; o frontend somente traduz a resposta para apresentação. Finalização é temporal e derivada na consulta, sem representar adesão. Dados ficam exclusivamente em users/{uid}/adaptations/initial via API. [Contrato, persistência e salvaguardas](adaptation.md).
