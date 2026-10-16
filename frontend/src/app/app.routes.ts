@@ -45,6 +45,13 @@ export const routes: Routes = [
       import('./features/dashboard/dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
+    path: 'minha-conta',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/account/my-account').then((m) => m.MyAccount),
+  },
+
+  {
     path: 'avaliacao',
     canActivate: [authGuard],
     loadComponent: () =>

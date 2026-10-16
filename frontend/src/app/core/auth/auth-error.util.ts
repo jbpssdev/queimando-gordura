@@ -33,7 +33,17 @@ export function mapFirebaseAuthErrorMessage(error: unknown): string {
     case 'auth/popup-closed-by-user':
       return 'A autenticação com o Google foi cancelada antes da conclusão.';
     case 'auth/popup-blocked':
-      return 'A janela de autenticação foi bloqueada pelo navegador. Permita pop-ups e tente novamente.';
+      return 'A janela de autenticação foi bloqueada pelo navegador. Permita pop-ups ou utilize o login por redirecionamento.';
+    case 'auth/unauthorized-domain':
+      return 'Este domínio não está autorizado para autenticação com o Google no Firebase Console.';
+    case 'auth/cancelled-popup-request':
+      return 'A solicitação de login com Google foi cancelada.';
+    case 'auth/credential-already-in-use':
+      return 'Esta credencial do Google já está vinculada a outra conta.';
+    case 'auth/account-exists-with-different-credential':
+      return 'Já existe uma conta cadastrada com este e-mail através de outro método de login.';
+    case 'auth/operation-not-allowed':
+      return 'Este método de login não está ativado no Firebase Console.';
     case 'auth/too-many-requests':
       return 'Muitas tentativas sem sucesso. Aguarde alguns instantes antes de tentar novamente.';
     case 'auth/network-request-failed':

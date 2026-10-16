@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -11,6 +11,7 @@ import { FirebaseAuthService } from '../../../core/auth/firebase-auth.service';
   selector: 'app-verify-email',
   imports: [HlmButton, HlmCardImports, HlmAlertImports],
   template: `
+
     <div class="min-h-dvh bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <a class="skip-link" href="#verify-card">Pular para as opções de verificação</a>
 
@@ -134,7 +135,9 @@ export class VerifyEmail {
   protected readonly resendFeedback = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
 
-  protected readonly userEmail = signal<string>(this.session.currentUser()?.email ?? 'seu e-mail');
+  protected readonly userEmail = computed(
+    () => this.session.currentUser()?.email ?? 'seu e-mail',
+  );
 
   private cooldownTimer: ReturnType<typeof setInterval> | null = null;
 

@@ -17,6 +17,7 @@ Aplicação cliente do **Queimando Gordura 1.0**, desenvolvida com **Angular 22 
 | `/verificar-email`      | Confirmação de e-mail obrigatória               | `verifyEmailGuard`                      |
 | `/completar-perfil`     | Preenchimento de perfil pendente (Google/retry) | `completeProfileGuard`                  |
 | `/painel`               | Dashboard principal autenticado                 | `authGuard`                             |
+| `/minha-conta`          | Dados reais da conta (`GET /api/v1/users/me`)   | `authGuard`                             |
 | `/avaliacao`            | Área de avaliação física/corporal               | `authGuard`                             |
 | `/adaptacao`            | Área do Programa Adaptação (30 dias)            | `authGuard`                             |
 | `/verificacao-ambiente` | Verificação técnica de saúde da API             | Livre                                   |
@@ -56,6 +57,9 @@ frontend/src/app/
 │   │   ├── dashboard/
 │   │   ├── assessment/
 │   │   └── adaptation/
+│   ├── account/                    # Visualização de perfil real (/minha-conta)
+│   │   ├── my-account.ts
+│   │   └── my-account.spec.ts
 │   └── foundation/                 # Diagnóstico de ambiente e API
 └── shared/
     └── ui/                         # Componentes Spartan UI oficiais
@@ -95,9 +99,12 @@ frontend/src/app/
 
 ### 3.3. Login com Google
 
-- Utiliza `GoogleAuthProvider` e `signInWithPopup` oficial do Firebase SDK.
-- Trata bloqueios de pop-up ou cancelamento pelo usuário sem travamentos.
-- Ao retornar, consulta `GET /api/v1/users/me`. Se o perfil ainda não existir (404), encaminha para `/completar-perfil`, pré-preenchendo nome a partir do Google e exigindo confirmação de 18 anos ou mais.
+- Provedor oficial `GoogleAuthProvider` via Firebase SDK.
+- Fluxo principal via pop-up (`signInWithPopup`).
+- **Resiliência a bloqueio de pop-up e dispositivos móveis:** Caso o navegador bloqueie o pop-up (`auth/popup-blocked`), a interface exibe feedback claro e disponibiliza opção para prosseguir via redirecionamento (`signInWithGoogleRedirect`).
+- **Restauração de sessão pós-redirecionamento:** Ao carregar `/entrar`, o componente avalia `getRedirectResult()`, processando automaticamente credenciais retornadas de redirecionamentos Google.
+- **Tratamento de domínios e erros comuns:** Mapeia `auth/unauthorized-domain`, cancelamentos de pop-up e conflitos de credenciais com orientações claras.
+- Ao autenticar, consulta `GET /api/v1/users/me`. Se o perfil ainda não existir (404), encaminha para `/completar-perfil`, pré-preenchendo nome a partir do Google e exigindo confirmação de 18 anos ou mais.
 
 ### 3.4. Confirmação de E-mail
 
@@ -111,6 +118,17 @@ frontend/src/app/
 - Rota: `/recuperar-senha`.
 - Envio via `sendPasswordResetEmail(auth, email)`.
 - Mensagem neutra que não expõe publicamente se uma conta existe na base de dados.
+
+### 3.6. Minha Conta (`/minha-conta`)
+
+- Rota protegida por `authGuard`.
+- Apresenta os dados reais de cadastro consultados diretamente da API NestJS (`GET /api/v1/users/me`), através do estado reativo da sessão (`session.currentProfile()`):
+  - Nome completo (Primeiro nome e Sobrenome);
+  - E-mail e badge de status de confirmação;
+  - Status da autodeclaração de 18 anos ou mais;
+  - Data de criação da conta (formatada em português).
+- **Privacidade e segurança:** UIDs internos, tokens e identificadores técnicos não são expostos na interface.
+- Acesso à ação de encerramento seguro de sessão (logout) com limpeza de estado e redirecionamento para `/entrar`.
 
 ---
 
@@ -144,6 +162,15 @@ Para desenvolvimento com Firebase Auth Emulator local:
 1. Inicie o emulador (`npm run emulators`).
 2. Defina `mode: 'emulator'` e informe `options: { apiKey: 'demo-key', projectId: 'demo-queimando-gordura' }`.
 3. O frontend conectará automaticamente a `http://localhost:9099` (nunca em produção).
+
+### Validação: Emuladores Locais vs. Firebase Real (Cloud)
+
+- **Firebase Emulator Suite (Totalmente Validado Localmente):**
+  - Todos os testes de integração automatizados e testes end-to-end (`npm run test:integration`) executam sobre o Firebase Auth Emulator (porta 9099) e Firestore Emulator (porta 8080).
+  - Fluxos validados com sucesso no emulador: cadastro com 18+, emissão e envio de token Bearer via interceptor, persistência na API NestJS (`PUT /api/v1/users/me`), verificação de e-mail com `oobCode` do emulador, login com e-mail/senha, bloqueio por guards, recuperação de falha 503 e carregamento de `/minha-conta`.
+- **Firebase Cloud (Ambiente Remoto):**
+  - Para conectar a um projeto Firebase em nuvem real, preencha os parâmetros públicos do Firebase (`apiKey`, `authDomain`, `projectId`, `appId`, etc.) no arquivo de ambiente desejado com `mode: 'production'`.
+  - **Requisito para Google Sign-In Remoto:** O domínio onde o frontend é servido (seja `localhost` para testes ou domínio de produção) deve estar expressamente adicionado à lista de **Authorized Domains** no Firebase Console (*Authentication > Settings > Authorized domains*). Caso contrário, o Firebase rejeitará a autenticação com `auth/unauthorized-domain`, que é tratada pelo frontend com alerta explicativo.
 
 ---
 
