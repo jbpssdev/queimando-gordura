@@ -7,6 +7,7 @@ import type {
   AdaptationDay,
   AdaptationPlanResponse,
 } from '../../../../core/adaptation/adaptation.model';
+import type { DiaryDaySummaryItem } from '../../../../core/diary/diary.model';
 
 @Component({
   selector: 'app-adaptation-journey',
@@ -108,8 +109,8 @@ import type {
               Calendário dos 30 Dias Consecutivos
             </h2>
             <p class="text-xs text-muted-foreground mt-0.5">
-              Dias passados representam o tempo percorrido. Registros detalhados de hábitos serão
-              liberados na próxima etapa.
+              Dias passados representam o tempo percorrido. Os hábitos registrados em cada data são
+              integrados ao seu Diário.
             </p>
           </div>
         </div>
@@ -154,10 +155,62 @@ import type {
                 {{ formatDayDate(day.date) }}
               </div>
 
+              <!-- Indicadores Discretos de Hábitos Persistidos -->
+              <div class="mt-2 pt-1.5 border-t border-border/50 min-h-6">
+                @if (getSummaryForDay(day.date); as sum) {
+                  @if (sum.hasMeals || sum.hasWater || sum.hasActivities || sum.hasWeight) {
+                    <div
+                      class="flex flex-wrap items-center gap-1 text-[11px]"
+                      title="Hábitos registrados nesta data"
+                    >
+                      @if (sum.hasMeals) {
+                        <span
+                          role="img"
+                          aria-label="Alimentação registrada"
+                          title="Alimentação registrada"
+                          >🍽️</span
+                        >
+                      }
+                      @if (sum.hasWater) {
+                        <span role="img" aria-label="Água registrada" title="Água registrada"
+                          >💧</span
+                        >
+                      }
+                      @if (sum.hasActivities) {
+                        <span
+                          role="img"
+                          aria-label="Atividade física registrada"
+                          title="Atividade física registrada"
+                          >🏃</span
+                        >
+                      }
+                      @if (sum.hasWeight) {
+                        <span role="img" aria-label="Peso registrado" title="Peso registrado"
+                          >⚖️</span
+                        >
+                      }
+                    </div>
+                  } @else {
+                    <span class="text-[10px] text-muted-foreground/70 italic">Sem registros</span>
+                  }
+                } @else {
+                  <span class="text-[10px] text-muted-foreground/70 italic">Sem registros</span>
+                }
+              </div>
+
+              <!-- Link para o Diário -->
+              <a
+                [routerLink]="['/diario']"
+                [queryParams]="{ date: day.date }"
+                class="mt-1 text-[10px] text-primary hover:underline font-medium block"
+              >
+                Abrir no Diário →
+              </a>
+
               <!-- Título de Marco se houver -->
               @if (day.isMilestone) {
                 <div
-                  class="mt-2 pt-2 border-t border-border/60 text-[10px] font-semibold text-amber-700 dark:text-amber-300"
+                  class="mt-1.5 pt-1.5 border-t border-border/60 text-[10px] font-semibold text-amber-700 dark:text-amber-300"
                 >
                   {{ day.milestoneTitle }}
                 </div>
@@ -201,6 +254,14 @@ import type {
             </p>
           </div>
         </div>
+
+        <div
+          class="p-3.5 rounded-xl border border-primary/20 bg-primary/5 text-xs text-muted-foreground"
+        >
+          ⚖️ <strong>Pesagem semanal recomendada:</strong> Os marcos semanais dos Dias 7, 14, 21 e
+          30 são os momentos ideais para registrar uma nova aferição de peso no seu
+          <a routerLink="/diario" class="text-primary font-semibold underline">Diário</a>.
+        </div>
       </section>
 
       <!-- Ações de Navegação -->
@@ -218,6 +279,11 @@ import type {
 export class AdaptationJourney {
   public readonly plan = input.required<AdaptationPlanResponse | null>();
   public readonly days = input.required<readonly AdaptationDay[]>();
+  public readonly diarySummaries = input<Record<string, DiaryDaySummaryItem>>({});
+
+  public getSummaryForDay(date: string): DiaryDaySummaryItem | null {
+    return this.diarySummaries()[date] ?? null;
+  }
 
   public readonly currentDay = computed(() => this.plan()?.currentDay ?? 1);
 

@@ -100,4 +100,27 @@ describe('AdaptationJourney Component', () => {
     expect(component.currentPhaseMessage()).not.toContain('Reta final');
     expect(component.progressPercentage()).toBe(100);
   });
+
+  it('exibe indicadores de hábitos quando fornecidos pelo diário', () => {
+    const days = build30DaysTimeline('2026-10-16', 5);
+    fixture.componentRef.setInput('plan', mockPlan);
+    fixture.componentRef.setInput('days', days);
+    fixture.componentRef.setInput('diarySummaries', {
+      '2026-10-16': {
+        date: '2026-10-16',
+        hasMeals: true,
+        hasWater: true,
+        hasActivities: false,
+        hasWeight: true,
+      },
+    });
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('🍽️');
+    expect(compiled.textContent).toContain('💧');
+    expect(compiled.textContent).toContain('⚖️');
+    expect(compiled.textContent).toContain('Abrir no Diário');
+    expect(compiled.textContent).toContain('Sem registros');
+  });
 });

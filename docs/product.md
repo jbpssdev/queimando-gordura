@@ -1,6 +1,6 @@
 # Produto — Queimando Gordura 1.0
 
-Autenticação, perfil básico e Avaliação Inicial e calendário organizacional da Adaptação estão integrados até o checkpoint 6C. Registros diários e recomendações de emagrecimento permanecem planejados.
+Autenticação, perfil básico, Avaliação Inicial, calendário organizacional da Adaptação e diário pessoal estão integrados até o checkpoint 7C. Recomendações de emagrecimento permanecem planejadas.
 
 Público inicial: adultos de 18 anos ou mais que desejam emagrecer. Identidade clara, moderna, limpa, quase minimalista, com cores alegres equilibradas e foco em dados/resultados; sem aparência de academia, excesso de sombras, gradientes ou cartões decorativos.
 
@@ -8,7 +8,7 @@ Autenticação implementada: e-mail/senha e Google via Firebase Authentication; 
 
 Avaliação inicial implementada: informações corporais, rotina, atividade cotidiana, exercícios, objetivos e dados de saúde relevantes fornecidos voluntariamente. Primeiro módulo: **Adaptação**, com duração de **30 dias**.
 
-Acompanhamento planejado:
+Acompanhamento: diário básico de refeições, água, atividades e peso implementado no7C. Evoluções planejadas:
 
 - Alimentação diária com alimentos e preparos detalhados, quantidades em gramas, calorias, macronutrientes e fibras.
 - Musculação e cardio por intensidade e duração.

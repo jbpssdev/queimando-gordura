@@ -45,6 +45,7 @@ import { AdaptationJourney } from './components/adaptation-journey';
           </div>
 
           <div class="flex items-center gap-3">
+            <a routerLink="/diario" hlmBtn variant="outline" size="sm" class="text-xs"> Diário </a>
             <a routerLink="/painel" hlmBtn variant="outline" size="sm" class="text-xs"> Painel </a>
           </div>
         </div>
@@ -73,7 +74,11 @@ import { AdaptationJourney } from './components/adaptation-journey';
           </div>
         } @else if (state.hasActivePlan()) {
           <!-- Jornada em Andamento ou Concluída -->
-          <app-adaptation-journey [plan]="state.plan()" [days]="state.timelineDays()" />
+          <app-adaptation-journey
+            [plan]="state.plan()"
+            [days]="state.timelineDays()"
+            [diarySummaries]="state.diarySummaries()"
+          />
         } @else {
           <!-- Seleção de Modalidade e Prévia antes de Iniciar -->
           <app-adaptation-preview

@@ -256,6 +256,7 @@ test('avaliação real: etapas, rascunho, resultados da API, revisão, seguranç
   expect(JSON.stringify(storage)).not.toMatch(/cardiovascular|82[.,]73|assessment|bodyFat/i);
   await page.goto('/painel');
   await page.getByRole('button', { name: 'Sair', exact: true }).click();
+  await expect(page).toHaveURL(/\/entrar$/);
   const other = await identity(request);
   await login(page, other.email);
   await expect(page).toHaveURL(/\/painel$/);
@@ -307,6 +308,7 @@ test('avaliação: menor, valores inválidos e perfil incompleto são bloqueados
   }
   await page.goto('/painel');
   await page.getByRole('button', { name: 'Sair', exact: true }).click();
+  await expect(page).toHaveURL(/\/entrar$/);
   const incomplete = await identity(request, false);
   await login(page, incomplete.email);
   await expect(page).toHaveURL(/\/completar-perfil$/);

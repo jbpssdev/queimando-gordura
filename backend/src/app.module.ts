@@ -7,6 +7,8 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { AssessmentModule } from './modules/assessment/assessment.module.js';
 import { AdaptationModule } from './modules/adaptation/adaptation.module.js';
+import { FoodsModule } from './modules/foods/foods.module.js';
+import { DiaryModule } from './modules/diary/diary.module.js';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { AdaptationModule } from './modules/adaptation/adaptation.module.js';
     UsersModule,
     AssessmentModule,
     AdaptationModule,
+    FoodsModule,
+    DiaryModule,
     HealthModule,
   ],
 })

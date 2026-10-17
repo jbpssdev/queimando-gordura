@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Logger } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import { IsString } from 'class-validator';
 import request from 'supertest';
@@ -80,12 +80,19 @@ describe('API (e2e)', () => {
       .expect('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   });
   it('oculta informações internas em falhas inesperadas', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/v1/validation-probe/failure')
-      .expect(500);
-    expect(response.body.message).toBe('Erro interno do servidor.');
-    expect(JSON.stringify(response.body)).not.toContain('sensitive-internal-detail');
-    expect(response.body.stack).toBeUndefined();
+    const errors = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    try {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/validation-probe/failure')
+        .expect(500);
+      expect(response.body.message).toBe('Erro interno do servidor.');
+      expect(JSON.stringify(response.body)).not.toContain('sensitive-internal-detail');
+      expect(response.body.stack).toBeUndefined();
+      expect(errors).toHaveBeenCalledWith('Falha HTTP 500');
+      expect(JSON.stringify(errors.mock.calls)).not.toContain('sensitive-internal-detail');
+    } finally {
+      errors.mockRestore();
+    }
   });
   it('valida DTO e rejeita campos adicionais antes da operação', async () => {
     await request(app.getHttpServer())

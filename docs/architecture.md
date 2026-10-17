@@ -77,3 +77,7 @@ O módulo assessment valida seções, calcula métricas e aplica sinalizações 
 ## Adaptação — checkpoint 6C
 
 AdaptationModule usa a avaliação e resultados oficiais, decide elegibilidade e cria documento único por UID via transação, conferindo a revisão corrente. ClockService e utilitários civis calculam calendário e progresso no fuso persistido; o frontend somente traduz a resposta para apresentação. Finalização é temporal e derivada na consulta, sem representar adesão. Dados ficam exclusivamente em users/{uid}/adaptations/initial via API. [Contrato, persistência e salvaguardas](adaptation.md).
+
+## Diário e catálogo — checkpoint7C
+
+FoodsModule fornece catálogo TACO imutável versionado pela fonte e alimentos personalizados por usuário. DiaryModule registra snapshots nutricionais, água, atividades e peso sem exigir plano. Firestore guarda subcoleções privadas sob UID; calendário lê apenas resumos oficiais por data. Identificadores de envio e transações impedem duplicações concorrentes; versões da UI detectam PATCH desatualizado. Totais vêm da API, com cobertura por nutriente e ausência explícita. [Contrato, fonte e persistência](diary.md).

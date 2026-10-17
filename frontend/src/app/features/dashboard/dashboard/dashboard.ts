@@ -39,6 +39,12 @@ import { AdaptationStateService } from '../../../core/adaptation/adaptation-stat
                 Início
               </a>
               <a
+                routerLink="/diario"
+                class="rounded-md px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              >
+                Diário
+              </a>
+              <a
                 routerLink="/minha-conta"
                 class="rounded-md px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
               >
@@ -203,6 +209,29 @@ import { AdaptationStateService } from '../../../core/adaptation/adaptation-stat
                 } @else {
                   Conhecer e Iniciar Adaptação →
                 }
+              </a>
+            </div>
+          </div>
+
+          <!-- Card Diário da Adaptação -->
+          <div hlmCard class="flex flex-col justify-between p-6">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-border">
+                <h2 class="text-base font-semibold text-foreground">Diário de Hábitos</h2>
+                <span
+                  class="rounded-md bg-primary/10 border border-primary/20 px-2 py-0.5 text-xs font-semibold text-primary"
+                >
+                  Disponível
+                </span>
+              </div>
+              <p class="mt-4 text-sm leading-relaxed text-muted-foreground">
+                Acompanhe suas refeições com catálogo real, consumo de água, atividades físicas e
+                pesagens semanais sem julgamentos.
+              </p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-border">
+              <a routerLink="/diario" hlmBtn variant="default" class="w-full text-xs font-semibold">
+                Acessar Meu Diário →
               </a>
             </div>
           </div>

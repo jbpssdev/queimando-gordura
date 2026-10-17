@@ -279,6 +279,7 @@ test('adaptação real: início manual, persistência, calendário 30 dias, conc
     expect((await request.get('/api/v1' + endpoint)).status()).toBe(401);
   await page.goto('/painel');
   await page.getByRole('button', { name: 'Sair', exact: true }).click();
+  await expect(page).toHaveURL(/\/entrar$/);
   const other = await identity(request);
   await login(page, other.email);
   await expect(page).toHaveURL(/\/painel$/);

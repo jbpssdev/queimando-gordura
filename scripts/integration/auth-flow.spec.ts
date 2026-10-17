@@ -48,6 +48,22 @@ test('falha parcial adaptação: API desativada retorna 503 nos três endpoints'
   }
 });
 
+test('falha parcial diário e catálogo: Firebase desativado retorna 503 sem dados fictícios', async ({
+  request,
+}) => {
+  test.skip(!disabled);
+  for (const [method, path] of [
+    ['get', '/foods?query=arroz'],
+    ['get', '/diary/me?date=2026-10-17'],
+    ['post', '/diary/me/meals'],
+    ['post', '/diary/me/water'],
+    ['post', '/diary/me/activities'],
+    ['put', '/diary/me/weight'],
+  ] as const) {
+    expect((await request[method]('/api/v1' + path)).status()).toBe(503);
+  }
+});
+
 function temporaryEmail(): string {
   const email = `qg-browser-${randomUUID()}@example.test`;
   emails.push(email);

@@ -12,6 +12,8 @@ const env = {
   FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
 };
 const commands = [
+  { args: ['backend/scripts/import-taco.mjs', '--emulator'], cwd: '.' },
+  { args: ['backend/scripts/import-taco.mjs', '--emulator'], cwd: '.' },
   {
     args: [
       'node_modules/vitest/vitest.mjs',

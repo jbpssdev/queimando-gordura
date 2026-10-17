@@ -1,0 +1,29 @@
+{
+  "title": "TACO — Tabela Brasileira de Composição de Alimentos, 4ª edição revisada e ampliada",
+  "institution": "NEPA/UNICAMP",
+  "publicationYear": 2011,
+  "foods": 597,
+  "landingUrl": "https://nepa.unicamp.br/publicacoes/",
+  "spreadsheetUrl": "https://www.nepa.unicamp.br/arquivo/uploads/taco-4a-edicao/taco-4a-edicao-2/",
+  "spreadsheetSha256": "a66b8ec528daeabc63bc2b015fc9bd8c6d76b941c2fc0ed93a4311d449302d14",
+  "sheet": "CMVCol taco3",
+  "columns": {
+    "A": "sourceCode",
+    "B": "name",
+    "D": "energyKcal",
+    "F": "proteinG",
+    "G": "fatG",
+    "I": "carbohydrateG",
+    "J": "fiberG"
+  },
+  "unit": "por 100 g de parte comestível",
+  "reproduction": "Permitida reprodução parcial ou total com citação da fonte (publicação TACO, páginas PDF 4/5).",
+  "pdfUrl": "https://nepa.unicamp.br/wp-content/uploads/sites/27/2023/10/taco_4_edicao_ampliada_e_revisada.pdf",
+  "missingValues": "NA, Tr, células vazias e resultados negativos residuais não quantificáveis são null; zero numérico é preservado. Valores negativos brutos ficam em sourceNutrientNotes.",
+  "householdSource": {
+    "title": "IBGE — POF 2008-2009, Tabela de Medidas Referidas para os Alimentos Consumidos no Brasil",
+    "url": "https://biblioteca.ibge.gov.br/visualizacao/livros/liv50000.pdf",
+    "sha256": "317ace59e53e25f3fc4913c5f552adf181bf001e6272edb5ae7a46804aa360b0",
+    "scope": "Somente 9 medidas verificadas em 3 alimentos; 594 alimentos usam gramas. Atribuição factual das equivalências, sem extrapolação a alimentos/preparos não conferidos."
+  }
+}
