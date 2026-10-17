@@ -265,11 +265,17 @@ import type { DiaryDaySummaryItem } from '../../../../core/diary/diary.model';
       </section>
 
       <!-- Ações de Navegação -->
-      <div class="flex flex-col sm:flex-row gap-3 pt-2">
-        <a routerLink="/painel" hlmBtn variant="default" class="font-semibold">
-          Voltar ao Painel
+      <div class="flex flex-col sm:flex-row flex-wrap gap-3 pt-2">
+        <a routerLink="/adaptacao/progresso" hlmBtn variant="default" class="font-semibold">
+          Ver Progresso e Conquistas →
         </a>
-        <a routerLink="/avaliacao/resultados" hlmBtn variant="outline">
+        @if (isCompleted()) {
+          <a routerLink="/adaptacao/conclusao" hlmBtn variant="outline" class="font-semibold">
+            Ver Conclusão dos 30 Dias
+          </a>
+        }
+        <a routerLink="/painel" hlmBtn variant="outline"> Voltar ao Painel </a>
+        <a routerLink="/avaliacao/resultados" hlmBtn variant="ghost">
           Consultar Minha Avaliação Inicial
         </a>
       </div>

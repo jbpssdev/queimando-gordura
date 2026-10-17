@@ -1,6 +1,6 @@
 # Produto — Queimando Gordura 1.0
 
-Autenticação, perfil básico, Avaliação Inicial, calendário organizacional da Adaptação e diário pessoal estão integrados até o checkpoint 7C. Recomendações de emagrecimento permanecem planejadas.
+Autenticação, perfil básico, Avaliação Inicial, calendário organizacional da Adaptação e diário pessoal estão integrados; evolução, conquistas e PDF final foram integrados no checkpoint8C. Recomendações de emagrecimento permanecem planejadas.
 
 Público inicial: adultos de 18 anos ou mais que desejam emagrecer. Identidade clara, moderna, limpa, quase minimalista, com cores alegres equilibradas e foco em dados/resultados; sem aparência de academia, excesso de sombras, gradientes ou cartões decorativos.
 
@@ -8,13 +8,9 @@ Autenticação implementada: e-mail/senha e Google via Firebase Authentication; 
 
 Avaliação inicial implementada: informações corporais, rotina, atividade cotidiana, exercícios, objetivos e dados de saúde relevantes fornecidos voluntariamente. Primeiro módulo: **Adaptação**, com duração de **30 dias**.
 
-Acompanhamento: diário básico de refeições, água, atividades e peso implementado no7C. Evoluções planejadas:
+Acompanhamento implementado: alimentação diária com catálogo real, preparos, gramas/medidas verificadas, calorias/macronutrientes/fibras com cobertura explícita; alimentos personalizados privados; água; musculação/cardio por intensidade e duração; pesagens por data, evolução semanal, gráfico real, conquistas derivadas e relatório final PDF autenticado. Persistência e histórico nutricional ficam no backend/Firestore, com dados clínicos opcionais excluídos do PDF por padrão. [Contrato e limitações](adaptation-progress.md).
 
-- Alimentação diária com alimentos e preparos detalhados, quantidades em gramas, calorias, macronutrientes e fibras.
-- Musculação e cardio por intensidade e duração.
-- Atualização semanal de peso e gráficos.
-- Ajustes fundamentados das estimativas, preservando histórico e rastreabilidade.
-- Relatório final em PDF.
+Ajustes automáticos de recomendações energéticas, receitas/preparos complexos e novos relatórios permanecem planejados; não ativar metas calóricas sem política validada.
 
 Módulos posteriores: **Foco Total**, controle glicêmico, exames e sono. Não criar funcionalidades desses módulos sem novo escopo autorizado.
 

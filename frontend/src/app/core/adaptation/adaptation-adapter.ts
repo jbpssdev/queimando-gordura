@@ -1,8 +1,13 @@
 import type {
   AdaptationPlanResponse as WirePlan,
   AdaptationPreviewResponse as WirePreview,
+  WireAdaptationProgressResponse as WireProgress,
 } from './adaptation-contract';
-import type { AdaptationPlanResponse, AdaptationPreviewResponse } from './adaptation.model';
+import type {
+  AdaptationPlanResponse,
+  AdaptationPreviewResponse,
+  AdaptationProgressResponse,
+} from './adaptation.model';
 const reasons: Record<string, string> = {
   CLINICAL_POLICY_PENDING: 'Intensificada indisponível: política clínica ainda não validada.',
   EMERGENCY_SYMPTOMS_PRESENT: 'Sintomas urgentes exigem avaliação presencial imediata.',
@@ -66,5 +71,76 @@ export function presentPlan(wire: WirePlan): AdaptationPlanResponse {
       milestoneTitle: milestones[day.dayNumber],
       milestoneDescription: 'Marco temporal; não comprova adesão nem conclusão de atividades.',
     })),
+  };
+}
+
+export function presentProgress(wire: WireProgress): AdaptationProgressResponse {
+  const evolution = wire.weightEvolution;
+  return {
+    planStatus: wire.status === 'active' ? 'in_progress' : 'completed',
+    mode: wire.mode,
+    currentDay: wire.currentDay,
+    totalDays: 30,
+    startDate: wire.startDate,
+    endDate: wire.endDate,
+    timeZone: wire.timeZone,
+    reportAvailable: wire.reportAvailable,
+    calorieTargetKcal: null,
+    summary: {
+      totalDaysMonitored: wire.currentDay,
+      daysWithMeals: wire.participation.daysWithMeals,
+      daysWithWater: wire.participation.daysWithWater,
+      daysWithActivities: wire.participation.daysWithActivities,
+      daysWithWeight: wire.participation.daysWithWeight,
+    },
+    weightEvolution: {
+      initialWeightKg: evolution.initialDeclaredWeight?.weightKg ?? null,
+      initialWeightDate: evolution.initialDeclaredWeight?.date ?? null,
+      latestWeightKg: evolution.lastMeasurement?.weightKg ?? null,
+      latestWeightDate: evolution.lastMeasurement?.date ?? null,
+      weightDeltaKg: evolution.weightDeltaKg,
+      weighIns: evolution.measurements.map((w) => ({
+        date: w.date,
+        weightKg: w.weightKg,
+        source: w.source,
+      })),
+      currentBmi: wire.derivedIndicators.currentBmi?.value ?? null,
+      initialBmi: wire.derivedIndicators.initialBmi?.value ?? null,
+      updatedMetabolicEstimates: wire.derivedIndicators.currentBmr
+        ? {
+            tmbKcal: wire.derivedIndicators.currentBmr.bmrKcal,
+            getKcal: null,
+          }
+        : null,
+    },
+    weeklyPeriods: wire.weeklyPeriods.map((wp) => ({
+      periodNumber: wp.periodNumber,
+      title: wp.label,
+      startDay: wp.days?.[0]?.dayNumber ?? 0,
+      endDay: wp.days?.at(-1)?.dayNumber ?? 0,
+      milestoneDay: wp.days?.find((d) => milestones[d.dayNumber])?.dayNumber ?? null,
+      milestoneTitle: wp.days?.map((d) => milestones[d.dayNumber]).find(Boolean) ?? null,
+      days: (wp.days ?? []).map((d) => ({
+        dayNumber: d.dayNumber,
+        date: d.localDate,
+        isPast: d.temporalState === 'past',
+        isToday: d.temporalState === 'today',
+        isFuture: d.temporalState === 'future',
+        hasMeals: d.hasMeals,
+        hasWater: d.hasWater,
+        hasActivities: d.hasActivities,
+        hasWeight: d.hasWeight,
+      })),
+    })),
+    achievements: [...wire.achievements.unlocked, ...wire.achievements.locked].map((a) => ({
+      id: a.code,
+      title: a.title,
+      description: a.description,
+      unlocked: a.unlocked,
+      unlockedAt: a.unlockedAt,
+      progress: a.progress.current,
+      target: a.progress.target,
+    })),
+    notices: wire.notices.map((n) => n.message),
   };
 }

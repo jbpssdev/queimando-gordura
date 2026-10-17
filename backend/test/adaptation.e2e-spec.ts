@@ -9,6 +9,12 @@ import { ClockService } from '../src/modules/adaptation/clock.service.js';
 import type { AdaptationDocument } from '../src/modules/adaptation/types/adaptation.types.js';
 import type { AssessmentDocument } from '../src/modules/assessment/types/assessment.types.js';
 import type { AssessmentResultDocument } from '../src/modules/assessment/types/metrics.types.js';
+import type {
+  ActivityEntry,
+  MealDocument,
+  WaterEntry,
+  WeightEntry,
+} from '../src/modules/diary/types/diary.types.js';
 import { FirebaseService } from '../src/modules/firebase/firebase.service.js';
 
 describe('Adaptation Engine (e2e)', () => {
@@ -19,6 +25,18 @@ describe('Adaptation Engine (e2e)', () => {
   const assessmentDocs = new Map<string, AssessmentDocument>();
   const currentResults = new Map<string, AssessmentResultDocument>();
   const adaptationDocs = new Map<string, AdaptationDocument>();
+  const diaryMeals = new Map<string, Partial<MealDocument>[]>();
+  const diaryWater = new Map<string, Partial<WaterEntry>[]>();
+  const diaryActivities = new Map<string, Partial<ActivityEntry>[]>();
+  const diaryWeights = new Map<string, Partial<WeightEntry>[]>();
+  const defaultNutrient = { value: 0, isComplete: true };
+  const mockMealTotals = (kcal: number) => ({
+    energyKcal: { value: kcal, isComplete: true },
+    proteinG: defaultNutrient,
+    carbohydrateG: defaultNutrient,
+    fatG: defaultNutrient,
+    fiberG: defaultNutrient,
+  });
 
   const mockAuth = {
     verifyIdToken: vi.fn(async (token: string) => {
@@ -55,6 +73,10 @@ describe('Adaptation Engine (e2e)', () => {
       if (colName !== 'users') throw new Error(`Unexpected collection ${colName}`);
       return {
         doc: vi.fn((uid: string) => ({
+          get: vi.fn(async () => ({
+            exists: true,
+            data: () => ({ displayName: `Usuário ${uid}` }),
+          })),
           collection: vi.fn((subCol: string) => {
             if (subCol === 'assessments') {
               return {
@@ -98,6 +120,46 @@ describe('Adaptation Engine (e2e)', () => {
                     }),
                   };
                 }),
+              };
+            }
+            if (subCol === 'diary_meals') {
+              return {
+                where: vi.fn().mockReturnThis(),
+                get: vi.fn(async () => ({
+                  docs: (diaryMeals.get(uid) || []).map((m) => ({
+                    data: () => m as unknown as MealDocument,
+                  })),
+                })),
+              };
+            }
+            if (subCol === 'diary_water') {
+              return {
+                where: vi.fn().mockReturnThis(),
+                get: vi.fn(async () => ({
+                  docs: (diaryWater.get(uid) || []).map((w) => ({
+                    data: () => w as unknown as WaterEntry,
+                  })),
+                })),
+              };
+            }
+            if (subCol === 'diary_activities') {
+              return {
+                where: vi.fn().mockReturnThis(),
+                get: vi.fn(async () => ({
+                  docs: (diaryActivities.get(uid) || []).map((a) => ({
+                    data: () => a as unknown as ActivityEntry,
+                  })),
+                })),
+              };
+            }
+            if (subCol === 'diary_weights') {
+              return {
+                where: vi.fn().mockReturnThis(),
+                get: vi.fn(async () => ({
+                  docs: (diaryWeights.get(uid) || []).map((wt) => ({
+                    data: () => wt as unknown as WeightEntry,
+                  })),
+                })),
               };
             }
             throw new Error(`Unexpected subcollection ${subCol}`);
@@ -514,6 +576,237 @@ describe('Adaptation Engine (e2e)', () => {
       expect(
         res.body.calendar.every((d: { temporalState: string }) => d.temporalState === 'past'),
       ).toBe(true);
+    });
+  });
+
+  describe('GET /adaptation/me/progress - Progresso, Evolução e Conquistas', () => {
+    it('retorna 401 para requisição sem autenticação', async () => {
+      const server = app.getHttpServer();
+      await request(server).get('/api/v1/adaptation/me/progress').expect(401);
+    });
+
+    it('retorna 403 para usuário com e-mail não verificado', async () => {
+      const server = app.getHttpServer();
+      await request(server)
+        .get('/api/v1/adaptation/me/progress')
+        .set('Authorization', 'Bearer unverified-token')
+        .expect(403);
+    });
+
+    it('retorna 404 quando o usuário não possui plano', async () => {
+      const server = app.getHttpServer();
+      const res = await request(server)
+        .get('/api/v1/adaptation/me/progress')
+        .set('Authorization', 'Bearer user-b-token')
+        .expect(404);
+
+      expect(res.body.code).toBe('ADAPTATION_NOT_FOUND');
+    });
+
+    it('retorna estrutura completa de progresso para plano ativo no Dia 1', async () => {
+      vi.spyOn(testClock, 'now').mockReturnValue(new Date('2026-10-16T15:00:00.000Z'));
+
+      const server = app.getHttpServer();
+      const res = await request(server)
+        .get('/api/v1/adaptation/me/progress')
+        .set('Authorization', 'Bearer user-1-token')
+        .expect(200);
+
+      expect(res.body.id).toBe('initial');
+      expect(res.body.mode).toBe('standard');
+      expect(res.body.status).toBe('active');
+      expect(res.body.currentDay).toBe(1);
+      expect(res.body.reportAvailable).toBe(false);
+
+      // Participação
+      expect(res.body.participation).toBeDefined();
+      expect(res.body.participation.distinctDaysRecorded).toBe(0);
+
+      // 5 períodos semanais
+      expect(res.body.weeklyPeriods).toHaveLength(5);
+      expect(res.body.weeklyPeriods[0].periodNumber).toBe(1);
+      expect(res.body.weeklyPeriods[4].periodNumber).toBe(5);
+
+      // Evolução do peso
+      expect(res.body.weightEvolution).toBeDefined();
+      expect(res.body.weightEvolution.initialDeclaredWeight).toBeDefined();
+      expect(res.body.weightEvolution.initialDeclaredWeight.weightKg).toBe(75);
+      expect(res.body.weightEvolution.initialDeclaredWeight.source).toBe('initial_assessment');
+      expect(res.body.weightEvolution.weightDeltaKg).toBeNull();
+      expect(res.body.weightEvolution.deltaReason).toBe('NO_MEASUREMENTS_RECORDED');
+
+      // Indicadores derivados
+      expect(res.body.derivedIndicators).toBeDefined();
+
+      // Conquistas
+      expect(res.body.achievements).toBeDefined();
+      expect(res.body.achievements.locked).toHaveLength(7);
+      expect(res.body.achievements.unlocked).toHaveLength(0);
+    });
+
+    it('agrega dados reais do diário, atualiza indicadores e desbloqueia conquistas', async () => {
+      vi.spyOn(testClock, 'now').mockReturnValue(new Date('2026-10-25T15:00:00.000Z'));
+
+      const uid = 'user-adaptation-1';
+      // Refeições em dias distintos
+      diaryMeals.set(uid, [
+        {
+          id: 'meal-1',
+          date: '2026-10-16',
+          mealType: 'breakfast',
+          totals: mockMealTotals(450),
+        },
+        {
+          id: 'meal-2',
+          date: '2026-10-17',
+          mealType: 'lunch',
+          totals: mockMealTotals(650),
+        },
+      ]);
+      // Água
+      diaryWater.set(uid, [
+        { id: 'w-1', date: '2026-10-16', amountMl: 500 },
+        { id: 'w-2', date: '2026-10-18', amountMl: 750 },
+      ]);
+      // Atividades
+      diaryActivities.set(uid, [
+        { id: 'act-1', date: '2026-10-16', type: 'cardio', durationMinutes: 30 },
+      ]);
+      // Pesagens: duas medições para calcular variação
+      diaryWeights.set(uid, [
+        { date: '2026-10-16', weightKg: 75.0 },
+        { date: '2026-10-23', weightKg: 73.8 },
+      ]);
+
+      const server = app.getHttpServer();
+      const res = await request(server)
+        .get('/api/v1/adaptation/me/progress')
+        .set('Authorization', 'Bearer user-1-token')
+        .expect(200);
+
+      // Datas distintas: 16, 17, 18, 23 -> 4 datas distintas
+      expect(res.body.participation.distinctDaysRecorded).toBe(4);
+      expect(res.body.participation.daysWithMeals).toBe(2);
+      expect(res.body.participation.daysWithWater).toBe(2);
+      expect(res.body.participation.daysWithActivities).toBe(1);
+      expect(res.body.participation.daysWithWeight).toBe(2);
+
+      // Variação de peso calculada entre 75.0 e 73.8 (-1.2 kg)
+      expect(res.body.weightEvolution.measurements).toHaveLength(2);
+      expect(res.body.weightEvolution.weightDeltaKg).toBeCloseTo(-1.2, 12);
+      expect(res.body.weightEvolution.deltaReason).toBeNull();
+
+      // IMC atualizado com 73.8 kg na altura de 175 cm (73.8 / 1.75^2 = 24.1)
+      expect(res.body.derivedIndicators.currentBmi?.value).toBe(24.1);
+
+      // Conquistas desbloqueadas
+      const unlocked = res.body.achievements.unlocked.map((a: { code: string }) => a.code);
+      expect(unlocked).toContain('FIRST_DIARY_ENTRY');
+      expect(unlocked).toContain('FIRST_MEAL_ENTRY');
+      expect(unlocked).toContain('FIRST_ACTIVITY_ENTRY');
+      expect(unlocked).toContain('FIRST_WEIGHT_ENTRY');
+      expect(unlocked).not.toContain('SEVEN_DISTINCT_DAYS_RECORDED');
+    });
+
+    it('reportAvailable se torna true após encerramento do Dia 30', async () => {
+      // Simula Dia 31
+      vi.spyOn(testClock, 'now').mockReturnValue(new Date('2026-11-15T15:00:00.000Z'));
+
+      const server = app.getHttpServer();
+      const res = await request(server)
+        .get('/api/v1/adaptation/me/progress')
+        .set('Authorization', 'Bearer user-1-token')
+        .expect(200);
+
+      expect(res.body.status).toBe('completed');
+      expect(res.body.reportAvailable).toBe(true);
+
+      const unlocked = res.body.achievements.unlocked.map((a: { code: string }) => a.code);
+      expect(unlocked).toContain('ADAPTATION_30_DAYS_COMPLETED');
+    });
+  });
+
+  describe('GET /adaptation/me/report.pdf - Relatório PDF Oficial', () => {
+    it('retorna 401 para requisição sem autenticação', async () => {
+      const server = app.getHttpServer();
+      await request(server).get('/api/v1/adaptation/me/report.pdf').expect(401);
+    });
+
+    it('retorna 403 para usuário com e-mail não verificado', async () => {
+      const server = app.getHttpServer();
+      await request(server)
+        .get('/api/v1/adaptation/me/report.pdf')
+        .set('Authorization', 'Bearer unverified-token')
+        .expect(403);
+    });
+
+    it('retorna 400 Bad Request se includeHealthDetails for inválido', async () => {
+      const server = app.getHttpServer();
+      await request(server)
+        .get('/api/v1/adaptation/me/report.pdf?includeHealthDetails=invalido')
+        .set('Authorization', 'Bearer user-1-token')
+        .expect(400);
+    });
+
+    it('retorna 422 REPORT_NOT_AVAILABLE se o plano ainda estiver em andamento (Dia 10)', async () => {
+      vi.spyOn(testClock, 'now').mockReturnValue(new Date('2026-10-25T15:00:00.000Z'));
+
+      const server = app.getHttpServer();
+      const res = await request(server)
+        .get('/api/v1/adaptation/me/report.pdf')
+        .set('Authorization', 'Bearer user-1-token')
+        .expect(422);
+
+      expect(res.body.code).toBe('REPORT_NOT_AVAILABLE');
+      expect(res.body.message).toContain('30 dias');
+    });
+
+    it('retorna 200 com binário PDF legítimo após o encerramento dos 30 dias (Dia 31)', async () => {
+      vi.spyOn(testClock, 'now').mockReturnValue(new Date('2026-11-15T15:00:00.000Z'));
+
+      const server = app.getHttpServer();
+      const res = await request(server)
+        .get('/api/v1/adaptation/me/report.pdf')
+        .set('Authorization', 'Bearer user-1-token')
+        .expect(200);
+
+      expect(res.headers['content-type']).toBe('application/pdf');
+      expect(res.headers['content-disposition']).toBe(
+        'attachment; filename="relatorio-adaptacao-30-dias.pdf"',
+      );
+      expect(res.headers['cache-control']).toBe('no-store');
+
+      expect(Buffer.isBuffer(res.body)).toBe(true);
+      const pdfText = res.body.toString('latin1');
+      expect(pdfText.startsWith('%PDF-1.4')).toBe(true);
+      expect(pdfText).toContain('%%EOF');
+      expect(pdfText).toContain('Queimando Gordura');
+    });
+
+    it('omite informações clínicas quando includeHealthDetails=false', async () => {
+      vi.spyOn(testClock, 'now').mockReturnValue(new Date('2026-11-15T15:00:00.000Z'));
+
+      const server = app.getHttpServer();
+      const res = await request(server)
+        .get('/api/v1/adaptation/me/report.pdf?includeHealthDetails=false')
+        .set('Authorization', 'Bearer user-1-token')
+        .expect(200);
+
+      const pdfText = res.body.toString('latin1');
+      expect(pdfText).not.toContain('INFORMA\\307\\325ES AUTODECLARADAS PELO USU\\301RIO');
+    });
+
+    it('inclui informações clínicas autodeclaradas quando includeHealthDetails=true', async () => {
+      vi.spyOn(testClock, 'now').mockReturnValue(new Date('2026-11-15T15:00:00.000Z'));
+
+      const server = app.getHttpServer();
+      const res = await request(server)
+        .get('/api/v1/adaptation/me/report.pdf?includeHealthDetails=true')
+        .set('Authorization', 'Bearer user-1-token')
+        .expect(200);
+
+      const pdfText = res.body.toString('latin1');
+      expect(pdfText).toContain('INFORMA\\307\\325ES AUTODECLARADAS PELO USU\\301RIO');
     });
   });
 });

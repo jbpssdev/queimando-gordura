@@ -88,7 +88,7 @@ node backend/scripts/import-taco.mjs --dry-run
 node backend/scripts/import-taco.mjs --emulator
 ```
 
-O runner integrado importa597 alimentos e repete a importação para confirmar idempotência. O importador cria somente documentos ausentes, não sobrescreve documentos divergentes nem apaga nada. Em Cloud exige lista explícita contendo apenas queimando-gordura-783e4, ADC, autorização FIREBASE_ALLOW_CATALOG_IMPORT=true, sem emuladores e sem NODE_ENV=production. Não há importação/deploy de produção. Neste checkpoint, o projeto Cloud DEV queimando-gordura-783e4 recebeu os 597 documentos oficiais: primeira execução criou597; repetição criou0 e confirmou597 inalterados. Nenhum usuário ou diário Cloud foi criado/alterado. A jornada do diário foi validada nos emuladores; sua validação Cloud permanece pendente. Produção não foi acessada.
+O runner integrado importa597 alimentos e repete a importação para confirmar idempotência. O importador cria somente documentos ausentes, não sobrescreve documentos divergentes nem apaga nada. Em Cloud exige lista explícita contendo apenas queimando-gordura-783e4, ADC, autorização FIREBASE_ALLOW_CATALOG_IMPORT=true, sem emuladores e sem NODE_ENV=production. Não há importação/deploy de produção. Neste checkpoint, o projeto Cloud DEV queimando-gordura-783e4 recebeu os 597 documentos oficiais: primeira execução criou597; repetição criou0 e confirmou597 inalterados. Nenhum usuário ou diário Cloud foi criado/alterado. A jornada do diário foi validada nos emuladores; sua validação Cloud ficou pendente no7C e foi realizada no [checkpoint8C](adaptation-progress.md). Produção não foi acessada.
 
 ## Validação do checkpoint 7C
 

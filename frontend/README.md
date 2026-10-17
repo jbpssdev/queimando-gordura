@@ -21,6 +21,8 @@ Aplicação cliente do **Queimando Gordura 1.0**, desenvolvida com **Angular 22 
 | `/avaliacao`            | Questionário guiado de avaliação corporal/hábitos | `authGuard`                             |
 | `/avaliacao/resultados` | Diagnóstico metabólico e resultados calculados    | `authGuard`                             |
 | `/adaptacao`            | Área do Programa Adaptação (30 dias)              | `authGuard`                             |
+| `/adaptacao/progresso`  | Painel de evolução, gráficos de peso e conquistas | `authGuard`                             |
+| `/adaptacao/conclusao`  | Encerramento dos 30 dias e download de relatório  | `authGuard`                             |
 | `/diario`               | Diário de alimentação, água, exercícios e peso    | `authGuard`                             |
 | `/verificacao-ambiente` | Verificação técnica de saúde da API               | Livre                                   |
 
@@ -41,10 +43,13 @@ frontend/src/app/
 │   │   ├── assessment-state.service.ts # Gestor reativo de etapas e rascunho (Signals)
 │   │   └── assessment-helpers.ts   # Cálculo de idade, decimais pt-BR e pendências inteligentes
 │   ├── adaptation/                 # Módulo do Programa Adaptação (30 dias)
-│   │   ├── adaptation.model.ts     # Interfaces de prévia, modalidades, plano e marcos
+│   │   ├── adaptation.model.ts     # Interfaces de prévia, modalidades, plano, progresso e conquistas
+│   │   ├── adaptation-contract.ts  # Contratos HTTP canônicos (Wire) da API NestJS
+│   │   ├── adaptation-adapter.ts   # Adaptador de prévia, plano e progresso para a UI
 │   │   ├── adaptation-api.service.ts # Integração com /api/v1/adaptation/me
 │   │   ├── adaptation-state.service.ts # Estado reativo da jornada e modalidades (Signals)
-│   │   └── adaptation-helpers.ts   # Detecção IANA, formatação pt-BR e geração da timeline
+│   │   ├── adaptation-helpers.ts   # Detecção IANA, formatação pt-BR e geração da timeline
+│   │   └── adaptation-progress-helpers.ts # Cálculos de gráfico SVG, deltas neutros e download Blob
 │   ├── diary/                      # Módulo do Diário da Adaptação
 │   │   ├── diary.model.ts          # Tipos de alimentos, refeições, água, atividades e resumos
 │   │   ├── diary-api.service.ts    # Integração com /api/v1/foods e /api/v1/diary/me
@@ -84,6 +89,8 @@ frontend/src/app/
 │   │   │       └── step-nutrition.ts
 │   │   ├── adaptation/             # Área do Programa Adaptação (/adaptacao)
 │   │   │   ├── adaptation.ts       # Container dinâmico (carregamento/erro/prévia/jornada)
+│   │   │   ├── adaptation-progress.ts # Painel de evolução, gráficos e conquistas (/adaptacao/progresso)
+│   │   │   ├── adaptation-completion.ts # Encerramento positivo e relatório (/adaptacao/conclusao)
 │   │   │   └── components/
 │   │   │       ├── adaptation-preview.ts # Seleção de modalidade e confirmação de início
 │   │   │       └── adaptation-journey.ts # Painel de progresso dos 30 dias e calendário temporal
@@ -398,7 +405,51 @@ A rota `/diario` está disponível para todo usuário autenticado com e-mail con
 | `PUT`    | `/api/v1/diary/me/weight`                  | Registro ou atualização idempotente de peso da data.  |
 | `DELETE` | `/api/v1/diary/me/weight?date=YYYY-MM-DD`  | Remoção de pesagem da data.                           |
 
-## 8. Como Executar e Validar
+## 8. Progresso, Conquistas, Conclusão e Relatório PDF — Checkpoint 8A
+
+O Checkpoint 8A conclui a jornada visual e funcional da Adaptação de 30 dias através de dados reais fornecidos pelo backend NestJS.
+
+### 8.1. Painel de Evolução (`/adaptacao/progresso`)
+
+- **Evolução do Peso Corporal em SVG Responsivo:**
+  - Plota exclusivamente pesagens reais do Diário (`source: 'diary'`). O peso declarado na Avaliação Inicial aparece separado, sem ser inventado como pesagem do ciclo.
+  - Preserva lacunas temporais reais sem interpolar medições falsas.
+  - Trata o caso de 0 pesagens com estado vazio acolhedor e atalho para o Diário.
+  - Trata o caso de 1 única pesagem com marcador isolado e aviso explícito de que ainda não há tendência calculável.
+  - Oferece tabela acessível opcional para leitores de tela e visualização tabular.
+  - Variação do peso expressa em texto neutro e descritivo (`formatWeightDelta`), sem julgamento moral de sucesso ou fracasso.
+- **Frequência de Hábitos e Indicadores:**
+  - Contabiliza dias com refeições, hidratação, atividades físicas e pesagens.
+  - Não exibe gráfico de calorias queimadas por exercício e não compara com metas calóricas inexistentes.
+  - Reavaliação corporal exibe IMC e estimativas metabólicas apenas quando calculados e enviados pela API.
+- **5 Períodos Semanais:**
+  - Dias 1–7 (Semana 1), Dias 8–14 (Semana 2), Dias 15–21 (Semana 3), Dias 22–28 (Semana 4) e Dias 29–30 (Fechamento).
+  - Preserva os marcos temporais nos dias 7, 14, 21 e 30.
+  - Distingue dias transcorridos, dias com hábitos anotados e dias futuros.
+- **Gamificação Leve por Consistência:**
+  - Conquistas atribuídas pelo backend (`GET /api/v1/adaptation/me/progress`).
+  - Apresentação acolhedora de marcos alcançados e marcos futuros com barra de progresso.
+  - Sem mensagens punitivas, perda de pontos, streaks negativos ou contadores de falhas.
+  - Jamais recompensa restrição calórica extrema, pular refeições ou pesagens obsessivas diárias.
+
+### 8.2. Encerramento da Adaptação (`/adaptacao/conclusao`)
+
+- Acessível quando a API indicar ciclo finalizado (`planStatus: 'completed'`). Caso acessada durante o ciclo, orienta amigavelmente o usuário sobre o dia atual e disponibiliza links de retorno.
+- Celebração positiva e acolhedora pelo encerramento dos 30 dias de rotina.
+- Resumo consolidado de hábitos, pesagens e conquistas alcançadas.
+- Próximos passos orientam que o usuário pode continuar utilizando livremente o Diário de Hábitos.
+- Não cria segundo ciclo automático nem inicia precocemente o futuro módulo Foco Total.
+
+### 8.3. Relatório em PDF Oficial (`report.pdf`)
+
+- Botão `Baixar relatório dos 30 dias (PDF)` consome `GET /api/v1/adaptation/me/report.pdf`.
+- Checkbox opcional: "Incluir condições de saúde e medicamentos que informei na avaliação", iniciando desmarcada (`includeHealthDetails=false`).
+- Resposta tratada estritamente como `Blob` binário e transferida diretamente via URL de objeto temporária (`relatorio-adaptacao-30-dias.pdf`).
+- **Segurança e Privacidade:** O documento PDF jamais é salvo em `localStorage`, cookies ou enviado a serviços externos.
+
+---
+
+## 9. Como Executar e Validar
 
 A partir da raiz do monorepo:
 
@@ -418,3 +469,5 @@ npm run build --workspace frontend
 ```
 
 Contrato HTTP canônico, adaptador, paginação e fontes: [Diário integrado](../docs/diary.md). O backend retorna snapshots e totais autoritativos; edição/exclusão e trocas de data não fabricam consumo zero.
+
+Contrato final do checkpoint8C e validações reais: [Evolução e conclusão](../docs/adaptation-progress.md). O adapter traduz status/participation/weightEvolution/achievements da API; não reproduz cálculos de negócio.

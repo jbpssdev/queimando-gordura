@@ -154,4 +154,19 @@ describe('Date & Calendar Utilities (Adaptação 30 dias)', () => {
     expect(diffCivilDays(start, after)).toBe(2);
     expect(computeTemporalMetrics(start, addCivilDays(start, 29), after).currentDay).toBe(3);
   });
+  it.each([1, 7, 14, 21, 30, 31])(
+    'fronteira temporal dia %i em mês bissexto e fusos distintos',
+    (day) => {
+      for (const zone of ['America/Sao_Paulo', 'Asia/Tokyo', 'America/New_York']) {
+        const start = '2024-02-28';
+        // Noon UTC stays on the same civil day in these three zones.
+        const instant = new Date(addCivilDays(start, day - 1) + 'T12:00:00Z');
+        const civil = getLocalDateString(instant, zone);
+        const metrics = computeTemporalMetrics(start, addCivilDays(start, 29), civil);
+        expect(metrics.currentDay).toBe(Math.min(day, 30));
+        expect(metrics.status).toBe(day === 31 ? 'completed' : 'active');
+        expect(metrics.elapsedDays).toBe(Math.min(day - 1, 30));
+      }
+    },
+  );
 });

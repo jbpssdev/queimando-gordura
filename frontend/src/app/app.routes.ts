@@ -69,6 +69,22 @@ export const routes: Routes = [
       import('./features/dashboard/adaptation/adaptation').then((m) => m.Adaptation),
   },
   {
+    path: 'adaptacao/progresso',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/adaptation/adaptation-progress').then(
+        (m) => m.AdaptationProgress,
+      ),
+  },
+  {
+    path: 'adaptacao/conclusao',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/adaptation/adaptation-completion').then(
+        (m) => m.AdaptationCompletion,
+      ),
+  },
+  {
     path: 'diario',
     canActivate: [authGuard],
     loadComponent: () => import('./features/dashboard/diary/diary').then((m) => m.Diary),

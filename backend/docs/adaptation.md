@@ -1,16 +1,18 @@
-# Adaptação de 30 Dias — Checkpoint 6C
+# Adaptação de 30 Dias — Checkpoint 6C e Checkpoint 8B
 
-Implementação do motor de criação, elegibilidade, ciclo temporal e persistência da Adaptação de 30 dias no backend NestJS.
+Implementação do motor oficial de criação, elegibilidade, ciclo temporal, acompanhamento de progresso, conquistas determinísticas e relatório PDF da Adaptação de 30 dias no backend NestJS.
 
 ## 1. Contratos de API
 
 Todos os endpoints residem sob o prefixo `/api/v1/adaptation` e exigem autenticação via Firebase ID Token validado (`FirebaseAuthGuard`) e e-mail confirmado (`VerifiedEmailGuard`). A identidade é derivada exclusivamente das credenciais verificadas no servidor.
 
-| Método e Endpoint                   | Resposta / Comportamento                                                                                                                                                                                                                                                                                 |
-| :---------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/v1/adaptation/me/preview` | Consulta a Avaliação Inicial e retorna a elegibilidade para as modalidades Padrão e Intensificada, além de avisos estáveis.                                                                                                                                                                              |
-| `POST /api/v1/adaptation/me/start`  | Recebe `{ mode, timeZone }`. Valida fuso horário IANA, confere elegibilidade e cria o plano em transação atômica. Responde `201 Created` na primeira criação e `200 OK` na repetição idempotente da mesma solicitação. Responde `409 Conflict` se houver tentativa de alterar parâmetros de plano ativo. |
-| `GET /api/v1/adaptation/me`         | Retorna o plano ativo ou concluído com 30 dias de calendário, estado temporal calculado dinamicamente pelo relógio do servidor, progresso e avisos. Retorna `404 Not Found` caso nenhum plano tenha sido iniciado.                                                                                       |
+| Método e Endpoint                                                 | Resposta / Comportamento                                                                                                                                                                                                                                                                                 |
+| :---------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/adaptation/me/preview`                               | Consulta a Avaliação Inicial e retorna a elegibilidade para as modalidades Padrão e Intensificada, além de avisos estáveis.                                                                                                                                                                              |
+| `POST /api/v1/adaptation/me/start`                                | Recebe `{ mode, timeZone }`. Valida fuso horário IANA, confere elegibilidade e cria o plano em transação atômica. Responde `201 Created` na primeira criação e `200 OK` na repetição idempotente da mesma solicitação. Responde `409 Conflict` se houver tentativa de alterar parâmetros de plano ativo. |
+| `GET /api/v1/adaptation/me`                                       | Retorna o plano ativo ou concluído com 30 dias de calendário, estado temporal calculado dinamicamente pelo relógio do servidor, progresso e avisos. Retorna `404 Not Found` caso nenhum plano tenha sido iniciado.                                                                                       |
+| `GET /api/v1/adaptation/me/progress`                              | Retorna consolidação de progresso temporal, participação por categoria no diário, 5 períodos semanais, histórico de pesagens com variação ponderal real, indicadores derivados (IMC e TMB) atualizados, conquistas determinísticas e a flag `reportAvailable`.                                           |
+| `GET /api/v1/adaptation/me/report.pdf?includeHealthDetails=false` | Retorna relatório oficial em formato PDF A4 gerado no servidor. Rejeita com `422 Unprocessable Entity` (`REPORT_NOT_AVAILABLE`) antes da conclusão do Dia 30. Inclui detalhes de saúde autodeclarados e aviso destacado apenas quando `includeHealthDetails=true`.                                       |
 
 ---
 
@@ -41,10 +43,92 @@ O motor distingue explicitamente entre:
 
 ---
 
-## 4. Persistência Firestore
+## 4. Regras de Progresso e Participação (Checkpoint 8B)
 
-- Documento armazenado em: `users/{uid}/adaptations/initial`.
-- Acesso direto via cliente é categoricamente negado pelas regras de segurança do Firestore; todas as leituras e escritas ocorrem através da API NestJS.
-- Transações atômicas impedem início duplicado e verificam a revisão atual da avaliação antes da criação.
+O backend distingue rigorosamente:
 
-Contrato integrado e testes: [guia canônico](../../docs/adaptation.md). Progresso conta dias civis anteriores (0% no Dia 1, 96,7% no Dia 30 e 100% após o fim). Disponibilidade nunca significa liberação médica; a meta calórica continua null e Intensificada indisponível.
+1. **Progresso temporal**: Dias civis decorridos desde a data de início até a data corrente (limitado a 30).
+2. **Participação**: Contagem de datas civis distintas contendo pelo menos um registro voluntário de refeição, hidratação, atividade ou pesagem.
+3. **Métricas por categoria**: Contagem de dias civis com registros de cada categoria (`daysWithMeals`, `daysWithWater`, `daysWithActivities`, `daysWithWeight`).
+4. **Ausência de registros**: Dias sem registros significam estritamente ausência de informação lançada pelo usuário, nunca consumo zero de calorias, jejum forçado ou fracasso.
+
+---
+
+## 5. Períodos Semanais
+
+Os 30 dias do plano são agrupados em 5 períodos civis:
+
+- **Período 1**: Dias 1 a 7 (7 dias).
+- **Período 2**: Dias 8 a 14 (7 dias).
+- **Período 3**: Dias 15 a 21 (7 dias).
+- **Período 4**: Dias 22 a 28 (7 dias).
+- **Período 5 (Fechamento)**: Dias 29 e 30 (2 dias).
+
+Cada período relata:
+
+- Intervalo de datas civis.
+- Dias transcorridos no período.
+- Dias com registros gerais e por categoria.
+- Pesagens ocorridas no intervalo.
+- Resumo nutricional com indicação explícita de cobertura parcial (`isPartial: true`). Não são calculadas médias atribuindo 0 kcal a dias sem registro.
+
+---
+
+## 6. Evolução do Peso e Indicadores Derivados
+
+- **Origem das pesagens**: Utiliza exclusivamente as pesagens salvas no `diary_weights` dentro do intervalo civil dos 30 dias.
+- **Peso inicial declarado**: Mantido como referência separada originada na Avaliação Inicial (`initial_assessment`), nunca injetado artificialmente como pesagem do Dia 1.
+- **Variação de peso (`weightDeltaKg`)**: Calculada somente quando existem pelo menos duas pesagens registradas no diário (`última - primeira`). Caso haja 0 ou 1 pesagem, o delta é retornado como `null` com o motivo (`INSUFFICIENT_MEASUREMENTS`).
+- **Indicadores derivados**:
+  - `currentBmi`: Calculado a partir da última pesagem do diário e da altura da avaliação.
+  - `currentBmr`: Estimado pela fórmula de Mifflin-St Jeor para a idade e peso da última pesagem (quando o sexo biológico para fórmula for informado).
+  - Oscilações de curto prazo não são interpretadas como perda ou ganho exclusivo de gordura nem atribuídas a exercícios.
+
+---
+
+## 7. Motor de Conquistas Determinísticas
+
+O motor calcula 7 conquistas determinísticas e idempotentes a partir dos dados consolidados:
+
+1. `FIRST_DIARY_ENTRY`: Pelo menos 1 data com registro no diário.
+2. `FIRST_MEAL_ENTRY`: Pelo menos 1 dia com refeição registrada.
+3. `FIRST_ACTIVITY_ENTRY`: Pelo menos 1 dia com atividade registrada.
+4. `FIRST_WEIGHT_ENTRY`: Pelo menos 1 dia com pesagem registrada no diário.
+5. `SEVEN_DISTINCT_DAYS_RECORDED`: Pelo menos 7 datas civis distintas com registros.
+6. `FOURTEEN_DISTINCT_DAYS_RECORDED`: Pelo menos 14 datas civis distintas com registros.
+7. `ADAPTATION_30_DAYS_COMPLETED`: Plano concluído (`status: completed`).
+
+Novas contas sem lançamentos não desbloqueiam nenhuma conquista indevida. As conquistas são categorizadas em `unlocked` e `locked`.
+
+---
+
+## 8. Relatório PDF Oficial
+
+O endpoint `GET /api/v1/adaptation/me/report.pdf` emite um documento binário A4 profissional gerado no servidor via builder puro e seguro, sem dependência de navegadores externos:
+
+- **Disponibilidade**: Rejeitado com código 422 (`REPORT_NOT_AVAILABLE`) enquanto o plano estiver ativo. Liberado imediatamente após a conclusão dos 30 dias.
+- **Cabeçalhos HTTP**: `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="relatorio-adaptacao-30-dias.pdf"`, `Cache-Control: no-store`.
+- **Conteúdo**:
+  - Cabeçalho institucional e identificação do usuário/período.
+  - Resumo temporal e métricas de participação com ressalva sobre dias vazios.
+  - Dados corporais e valores de referência iniciais.
+  - Tabela dos 5 períodos semanais com ressalvas de cobertura nutricional parcial.
+  - Histórico de pesagens, delta ponderal e limitações metrológicas da balança.
+  - Indicadores derivados (IMC e TMB).
+  - Conquistas obtidas no período.
+  - Seção clínica autodeclarada (apenas se `includeHealthDetails=true`), acompanhada de tarja destacada de aviso de que são dados autodeclarados e não diagnósticos.
+  - Aviso legal completo atestando que o documento não substitui diagnóstico médico nem prescrição nutricional.
+  - Rodapé em todas as páginas com numeração no formato "Página X de Y".
+
+---
+
+## 9. Persistência Firestore
+
+- Documento do plano armazenado em: `users/{uid}/adaptations/initial`.
+- Subcoleções consultadas no diário: `diary_meals`, `diary_water`, `diary_activities`, `diary_weights`.
+- Acesso direto via cliente permanece categoricamente negado pelas regras de segurança do Firestore.
+- Transações atômicas impedem duplicações e asseguram integridade concorrente.
+
+## Integração8C
+
+[Contrato integrado, segurança e validações](../../docs/adaptation-progress.md). Participação exclui datas futuras; conquistas usam referências civis reais e a revisão inicial preserva a referência corporal. PDF quebra células, repete cabeçalhos e exclui detalhes clínicos por padrão.

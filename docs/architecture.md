@@ -81,3 +81,7 @@ AdaptationModule usa a avaliação e resultados oficiais, decide elegibilidade e
 ## Diário e catálogo — checkpoint7C
 
 FoodsModule fornece catálogo TACO imutável versionado pela fonte e alimentos personalizados por usuário. DiaryModule registra snapshots nutricionais, água, atividades e peso sem exigir plano. Firestore guarda subcoleções privadas sob UID; calendário lê apenas resumos oficiais por data. Identificadores de envio e transações impedem duplicações concorrentes; versões da UI detectam PATCH desatualizado. Totais vêm da API, com cobertura por nutriente e ausência explícita. [Contrato, fonte e persistência](diary.md).
+
+## Evolução e conclusão — checkpoint8C
+
+AdaptationProgressService agrega o diário privado dentro do ciclo e até a data civil corrente; produz semanas, pesagens/indicadores e conquistas derivadas. A revisão que iniciou o plano preserva a referência corporal. AdaptationReportPdfService emite o PDF em memória somente depois do encerramento, com detalhes clínicos excluídos por padrão e Cache-Control no-store. Angular adapta o contrato real e desenha pontos reais, sem reproduzir cálculos de negócio. [Contrato, testes e privacidade](adaptation-progress.md).

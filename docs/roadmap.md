@@ -14,9 +14,9 @@ Seleção e início manual da Adaptação Padrão, calendário de 30 dias civis,
 
 Diário de refeições/água/atividades/peso integrado, catálogo completo TACO597, conversões verificadas, snapshots e calendário com registros reais. [Contrato e limites](diary.md).
 
-## Checkpoint 8 — a especificar
+## Preparação para lançamento
 
-Especificar evolução do acompanhamento e histórico, ampliação documental de medidas e privacidade. Consentimento, minimização, retenção/exclusão e salvaguardas devem anteceder dados reais e recomendações. Preservar autoridade do backend e não ativar déficit ou Intensificada com base em autodeclarações.
+Evolução semanal e relatório do ciclo foram integrados no8C. Permanecem ampliação documental de medidas e privacidade. Consentimento, minimização, retenção/exclusão e salvaguardas devem anteceder dados reais e recomendações. Preservar autoridade do backend e não ativar déficit ou Intensificada com base em autodeclarações.
 
 Revisão especializada dos fatores heurísticos de energia continua necessária antes de gerar recomendações. Google pessoal e entrega de e-mails exigem validação interativa. A CI GitHub continua bloqueada por cobrança externa, com workflow preservado.
 
@@ -24,6 +24,10 @@ Agentes futuros podem criar branches a partir da main integrada, respeitando wor
 
 ## Posterior — não implementado
 
-Receitas/preparos complexos; gráficos e relatórios; ajustes rastreáveis e PDF. Depois: Foco Total, controle glicêmico, exames e sono.
+Receitas/preparos complexos, novos gráficos/relatórios e ajustes rastreáveis de recomendações. Depois: Foco Total, controle glicêmico, exames e sono.
 
-Avaliação e calendário organizacional da Adaptação são funcionais; diário pessoal integrado no7C; evolução de relatórios/recomendações permanece futura. Roadmap não autoriza implementar etapas posteriores.
+Avaliação e calendário organizacional da Adaptação são funcionais; diário pessoal integrado no7C; evolução semanal, conquistas e PDF integrados no8C; recomendações novas permanecem futuras. Roadmap não autoriza implementar etapas posteriores.
+
+## Checkpoint8C — integração da conclusão
+
+Implementados progresso semanal, gráfico de pesagens reais, conquistas derivadas e PDF privado ao encerrar30 dias. Diário/progresso validados no Cloud DEV; ciclo acelerado/PDF em emuladores. [Detalhes e pendências de lançamento](adaptation-progress.md). Foco Total permanece não implementado, sem autorização automática para o próximo checkpoint.
