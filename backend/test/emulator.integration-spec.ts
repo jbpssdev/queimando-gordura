@@ -1,11 +1,12 @@
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
-import { describe, beforeAll, afterAll, it, expect } from 'vitest';
+import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/config/configure-app.js';
+import { ClockService } from '../src/modules/adaptation/clock.service.js';
 import { FirebaseService } from '../src/modules/firebase/firebase.service.js';
 
 const projectId = 'demo-queimando-gordura';
@@ -785,4 +786,151 @@ describe.runIf(isEmulatorRunning)('Integração Real com Firebase Emulator Suite
       await request(server).get(endpoint).set('Authorization', 'Bearer invalid-token').expect(401);
     }
   }, 30000);
+
+  it('calcula progresso real da adaptação a partir do diário e gera relatório PDF após encerramento', async () => {
+    const server = app.getHttpServer();
+    const clock = app.get(ClockService);
+    const person = await createIdentity();
+    const token = await confirmAndRefresh(person);
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // 1. Cadastra perfil e avaliação completa
+    await request(server)
+      .put('/api/v1/users/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ firstName: 'Adapt', lastName: 'User', age18Confirmed: true })
+      .expect(200);
+
+    const sections = {
+      body: {
+        dateOfBirth: '1990-05-15',
+        sexForMetabolicFormula: 'male' as const,
+        heightCm: 180,
+        weightKg: 85.0,
+        scaleType: 'standard' as const,
+      },
+      health: {
+        conditions: [],
+        hasNoKnownConditions: true,
+        isConditionUnknown: false,
+        symptoms: ['none'],
+      },
+      routine: {
+        workPattern: 'sedentary' as const,
+        sittingHoursPerDay: 8,
+        dailyMovementLevel: 'low' as const,
+        strengthTraining: { frequencyDaysPerWeek: 0, durationMinutes: 0, intensity: 'none' as const },
+        cardioTraining: { frequencyDaysPerWeek: 0, durationMinutes: 0, intensity: 'none' as const },
+      },
+      nutrition: {
+        mealsPerDay: 3,
+        mealRegularity: 'regular' as const,
+        hasKitchenScale: true,
+        sweetenedDrinksFrequency: 'never' as const,
+        alcoholFrequency: 'never' as const,
+        budgetConstrained: false,
+        dietaryPreferences: ['omnivore'],
+        allergies: [],
+        intolerances: [],
+        dietaryRestrictions: [],
+        mealSources: ['home_cooked'],
+        weightLossChallenges: [],
+      },
+    };
+
+    for (const section of ['body', 'health', 'routine', 'nutrition'] as const) {
+      await request(server)
+        .patch('/api/v1/assessments/me')
+        .set(headers)
+        .send({ section, data: sections[section] })
+        .expect(200);
+    }
+
+    await request(server)
+      .post('/api/v1/assessments/me/evaluate')
+      .set(headers)
+      .expect(201);
+
+    // 2. Inicia plano de adaptação
+    const planRes = await request(server)
+      .post('/api/v1/adaptation/me/start')
+      .set(headers)
+      .send({ mode: 'standard', timeZone: 'America/Sao_Paulo' })
+      .expect(201);
+
+    const startDate = planRes.body.startLocalDate;
+
+    // 3. Registra dados no diário (refeição, água, pesagens)
+    await request(server)
+      .post('/api/v1/diary/me/meals')
+      .set(headers)
+      .send({
+        date: startDate,
+        mealType: 'lunch',
+        items: [{ foodId: 'taco_3', amount: 150, unit: 'g' }],
+      })
+      .expect(201);
+
+    await request(server)
+      .post('/api/v1/diary/me/water')
+      .set(headers)
+      .send({
+        date: startDate,
+        amountMl: 500,
+      })
+      .expect(201);
+
+    await request(server)
+      .put('/api/v1/diary/me/weight')
+      .set(headers)
+      .send({ date: startDate, weightKg: 85.0 })
+      .expect(200);
+
+    // 4. Consulta progresso no Dia 1
+    const progressDay1 = await request(server)
+      .get('/api/v1/adaptation/me/progress')
+      .set(headers)
+      .expect(200);
+
+    expect(progressDay1.body.status).toBe('active');
+    expect(progressDay1.body.participation.distinctDaysRecorded).toBe(1);
+    expect(progressDay1.body.participation.daysWithMeals).toBe(1);
+    expect(progressDay1.body.participation.daysWithWater).toBe(1);
+    expect(progressDay1.body.participation.daysWithWeight).toBe(1);
+    expect(progressDay1.body.reportAvailable).toBe(false);
+
+    // PDF deve ser rejeitado com 422 antes da conclusão
+    await request(server)
+      .get('/api/v1/adaptation/me/report.pdf')
+      .set(headers)
+      .expect(422);
+
+    // 5. Simula encerramento dos 30 dias (Dia 31)
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 32);
+    vi.spyOn(clock, 'now').mockReturnValue(futureDate);
+
+    const progressCompleted = await request(server)
+      .get('/api/v1/adaptation/me/progress')
+      .set(headers)
+      .expect(200);
+
+    expect(progressCompleted.body.status).toBe('completed');
+    expect(progressCompleted.body.reportAvailable).toBe(true);
+
+    // 6. Baixa relatório PDF
+    const pdfRes = await request(server)
+      .get('/api/v1/adaptation/me/report.pdf')
+      .set(headers)
+      .expect(200);
+
+    expect(pdfRes.headers['content-type']).toBe('application/pdf');
+    expect(pdfRes.headers['content-disposition']).toBe(
+      'attachment; filename="relatorio-adaptacao-30-dias.pdf"',
+    );
+    expect(pdfRes.headers['cache-control']).toBe('no-store');
+    expect(Buffer.isBuffer(pdfRes.body)).toBe(true);
+    expect(pdfRes.body.toString('latin1').startsWith('%PDF-1.4')).toBe(true);
+  }, 30000);
 });
+

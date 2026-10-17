@@ -6,11 +6,25 @@ import { AdaptationEligibilityService } from './adaptation-eligibility.service.j
 import { AdaptationController } from './adaptation.controller.js';
 import { AdaptationService } from './adaptation.service.js';
 import { ClockService } from './clock.service.js';
+import { AdaptationProgressService } from './services/adaptation-progress.service.js';
+import { AdaptationReportPdfService } from './services/adaptation-report-pdf.service.js';
 
 @Module({
   imports: [FirebaseModule, AuthModule, AssessmentModule],
   controllers: [AdaptationController],
-  providers: [AdaptationService, AdaptationEligibilityService, ClockService],
-  exports: [AdaptationService, AdaptationEligibilityService, ClockService],
+  providers: [
+    AdaptationService,
+    AdaptationEligibilityService,
+    AdaptationProgressService,
+    AdaptationReportPdfService,
+    ClockService,
+  ],
+  exports: [
+    AdaptationService,
+    AdaptationEligibilityService,
+    AdaptationProgressService,
+    AdaptationReportPdfService,
+    ClockService,
+  ],
 })
 export class AdaptationModule {}
