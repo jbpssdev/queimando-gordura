@@ -45,6 +45,9 @@ import { AdaptationJourney } from './components/adaptation-journey';
           </div>
 
           <div class="flex items-center gap-3">
+            <a routerLink="/adaptacao/progresso" hlmBtn variant="outline" size="sm" class="text-xs">
+              Progresso
+            </a>
             <a routerLink="/diario" hlmBtn variant="outline" size="sm" class="text-xs"> Diário </a>
             <a routerLink="/painel" hlmBtn variant="outline" size="sm" class="text-xs"> Painel </a>
           </div>

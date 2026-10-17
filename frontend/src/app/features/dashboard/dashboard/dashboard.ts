@@ -62,6 +62,12 @@ import { AdaptationStateService } from '../../../core/adaptation/adaptation-stat
               >
                 Programa Adaptação
               </a>
+              <a
+                routerLink="/adaptacao/progresso"
+                class="rounded-md px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              >
+                Progresso
+              </a>
             </nav>
           </div>
 
@@ -193,23 +199,59 @@ import { AdaptationStateService } from '../../../core/adaptation/adaptation-stat
                 }
               </p>
             </div>
-            <div class="mt-6 pt-4 border-t border-border">
-              <a
-                routerLink="/adaptacao"
-                hlmBtn
-                variant="default"
-                class="w-full text-xs font-semibold"
-              >
-                @if (adaptationState.hasActivePlan()) {
-                  @if (adaptationState.isPlanCompleted()) {
+            <div class="mt-6 pt-4 border-t border-border space-y-2">
+              @if (adaptationState.hasActivePlan()) {
+                @if (adaptationState.isPlanCompleted()) {
+                  <a
+                    routerLink="/adaptacao/conclusao"
+                    hlmBtn
+                    variant="default"
+                    class="w-full text-xs font-semibold"
+                  >
                     Ver Conclusão da Jornada →
-                  } @else {
-                    Acessar Minha Jornada (Dia {{ adaptationState.plan()?.currentDay }}/30) →
-                  }
+                  </a>
+                  <a
+                    routerLink="/adaptacao/progresso"
+                    hlmBtn
+                    variant="outline"
+                    class="w-full text-xs font-semibold"
+                  >
+                    Ver Progresso e Conquistas
+                  </a>
                 } @else {
-                  Conhecer e Iniciar Adaptação →
+                  <a
+                    routerLink="/adaptacao"
+                    hlmBtn
+                    variant="default"
+                    class="w-full text-xs font-semibold"
+                  >
+                    Acessar Minha Jornada (Dia {{ adaptationState.plan()?.currentDay }}/30) →
+                  </a>
+                  <a
+                    routerLink="/adaptacao/progresso"
+                    hlmBtn
+                    variant="outline"
+                    class="w-full text-xs font-semibold"
+                  >
+                    Ver Progresso e Conquistas
+                  </a>
                 }
-              </a>
+              } @else {
+                <a
+                  routerLink="/adaptacao"
+                  hlmBtn
+                  variant="default"
+                  class="w-full text-xs font-semibold"
+                >
+                  Conhecer e Iniciar Adaptação →
+                </a>
+                <a
+                  routerLink="/adaptacao/progresso"
+                  class="block text-center text-xs text-primary hover:underline font-medium pt-1"
+                >
+                  Consultar Painel de Progresso
+                </a>
+              }
             </div>
           </div>
 

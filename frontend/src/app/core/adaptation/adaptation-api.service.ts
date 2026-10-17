@@ -1,14 +1,16 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable, timeout } from 'rxjs';
-import { presentPlan, presentPreview } from './adaptation-adapter';
+import { presentPlan, presentPreview, presentProgress } from './adaptation-adapter';
 import type {
   AdaptationPlanResponse as WirePlan,
   AdaptationPreviewResponse as WirePreview,
+  WireAdaptationProgressResponse as WireProgress,
 } from './adaptation-contract';
 import type {
   AdaptationPlanResponse,
   AdaptationPreviewResponse,
+  AdaptationProgressResponse,
   StartAdaptationDto,
 } from './adaptation.model';
 
@@ -44,4 +46,27 @@ export class AdaptationApiService {
       .post<WirePlan>(`${this.baseEndpoint}/start`, dto)
       .pipe(timeout(15000), map(presentPlan));
   }
+
+  /**
+   * Consulta o progresso, evolução do peso, hábitos por período e conquistas da adaptação.
+   */
+  public getProgress(): Observable<AdaptationProgressResponse> {
+    return this.http
+      .get<WireProgress>(`${this.baseEndpoint}/progress`)
+      .pipe(timeout(10000), map(presentProgress));
+  }
+
+  /**
+   * Solicita o relatório dos 30 dias em PDF gerado pelo backend.
+   * includeHealthDetails controla inclusão de histórico clínico e medicamentos.
+   */
+  public getReportPdf(includeHealthDetails = false): Observable<Blob> {
+    return this.http
+      .get(`${this.baseEndpoint}/report.pdf`, {
+        params: { includeHealthDetails: String(includeHealthDetails) },
+        responseType: 'blob',
+      })
+      .pipe(timeout(20000));
+  }
 }
+
